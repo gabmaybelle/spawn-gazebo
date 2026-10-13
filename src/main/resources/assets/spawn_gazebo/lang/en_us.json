@@ -1,0 +1,11 @@
+{
+  "spawn_gazebo.options.title": "Spawn Gazebo",
+  "spawn_gazebo.options.on_server": "On a server, the server's settings apply",
+  "spawn_gazebo.options.spawnGazebo": "Spawn Gazebo",
+  "spawn_gazebo.options.spawnGazebo.tooltip": "A little round stone gazebo at the world spawn of new worlds, with pillars of the wood that grows around it and a green copper dome. Only takes effect when a world is created.",
+  "spawn_gazebo.options.starterChest": "Starter Chest",
+  "spawn_gazebo.options.starterChest.tooltip": "A chest in the gazebo's railing with a bed, torches, bread, saplings and a bundle. Later players get the same kit handed to them, or their own chest with Lootr. Only takes effect when a world is created.",
+  "spawn_gazebo.options.protectGazebo": "Protect the Gazebo",
+  "spawn_gazebo.options.protectGazebo.tooltip": "The gazebo can only be changed in creative, and explosions, fire and pistons leave it alone. The chest, the benches and the pots still work. Turn off to remodel it.",
+  "pack.spawn_gazebo.data": "Spawn Gazebo"
+}
