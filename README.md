@@ -10,9 +10,9 @@ A Fabric mod for Minecraft 26.3. New worlds start in a little round stone gazebo
 - **Built from what's around it.** The pillars and benches are the wood that grows nearest the spawn: oak, spruce, birch, jungle, acacia, dark oak, mangrove, cherry, pale oak, bamboo or poplar. In deserts and badlands the stone is sandstone and the dome a browner copper; everywhere else it's grey stone with moss creeping in and azaleas growing over the dome.
 - **A starter chest**, in the railing opposite the entrance, like vanilla's bonus chest: a bed, sixteen torches, six bread, four saplings and a bundle. Or, if you'd rather, the bonus chest's own loot (a few tools, wood, food and seeds, different every time), or any loot table you name. The first player takes the chest; everyone who joins after them is handed a roll of the same loot. With [Lootr](https://modrinth.com/mod/lootr) installed, each player gets their own copy of the chest instead.
 - **Lanterns** hang under the eaves and stand either side of the steps, so the spawn is lit at night.
-- **Protection.** Outside creative the gazebo can't be broken or built on, and explosions, fire, pistons and buckets leave it alone. The chest, benches and pots still work, and the decorated pots can still be broken for their contents. The protection reaches 12 blocks from the middle of the gazebo (it's 7 wide itself), so the lawn around it stays as it was; the radius is a setting.
+- **Protection.** Outside creative the gazebo can't be broken or built on, and explosions, fire, pistons and buckets leave it alone. The chest, benches and pots still work, and the decorated pots can still be broken for their contents. The protection reaches 12 blocks from the middle of the gazebo (the gazebo itself reaches 7), so the lawn around it stays as it was; the radius is a setting.
 
-Building it also moves the world spawn to the middle of the gazebo and sets the `spawn_radius` game rule to 0, so everyone starts inside it.
+Building it also moves the world spawn to the middle of the gazebo and sets the `spawn_radius` game rule to 0, so everyone starts inside it. Any lava pool at the surface within 16 blocks (or the protected radius, if that's wider) is set to stone, so nobody's first steps outside are into lava.
 
 ## Settings
 
