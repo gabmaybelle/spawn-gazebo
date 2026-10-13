@@ -1,15 +1,20 @@
 package com.gabbymaybelle.spawngazebo;
 
 import com.mojang.serialization.Codec;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.Set;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -25,10 +30,13 @@ import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.DoublePlantBlock;
+import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
@@ -59,6 +67,8 @@ public final class SpawnGazebo {
 	private static final int CLEAR_HEIGHT = 18;
 	/** How far down a foundation is laid under a block that would otherwise float. */
 	private static final int FOUNDATION_DEPTH = 12;
+	/** How far past the footprint a felled tree's canopy can reach (acacia and dark oak spread the widest). */
+	private static final int CANOPY_REACH = 8;
 	/** The woods tools/generate-spawn.js writes a template for. */
 	private static final List<String> WOODS = List.of("oak", "spruce", "birch", "jungle", "acacia", "dark_oak",
 			"mangrove", "cherry", "pale_oak", "bamboo", "poplar");
@@ -109,10 +119,12 @@ public final class SpawnGazebo {
 		BlockPos origin = new BlockPos(cx - HALF, ground, cz - HALF);
 		Rotation rotation = Rotation.getRandom(level.getRandom());
 		clearAbove(level, origin);
+		clearOrphanedCanopy(level, origin);
 		StructurePlaceSettings settings = new StructurePlaceSettings()
 				.setRotation(rotation).setRotationPivot(new BlockPos(HALF, 0, HALF))
 				.setIgnoreEntities(true).setKnownShape(false);
-		template.get().placeInWorld(level, origin, origin, settings, level.getRandom(), Block.UPDATE_CLIENTS);
+		// No drops: a plant under the plinth whose other half or support goes would otherwise litter the floor.
+		template.get().placeInWorld(level, origin, origin, settings, level.getRandom(), Block.UPDATE_CLIENTS | Block.UPDATE_SUPPRESS_DROPS);
 		foundation(level, origin, palette.equals("sand") ? Blocks.SANDSTONE : Blocks.COBBLESTONE);
 		GazeboGuard.guard(level, new BoundingBox(origin.getX(), ground - GazeboGuard.DEPTH, origin.getZ(),
 				origin.getX() + SIZE - 1, ground + GazeboGuard.HEIGHT, origin.getZ() + SIZE - 1));
@@ -168,7 +180,12 @@ public final class SpawnGazebo {
 		level.getServer().getCommandStorage().set(Identifier.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "spawn"), spawn);
 	}
 
-	/** Trees, plants, snow and overhanging ground above the footprint go, top down so nothing drops. */
+	/**
+	 * Trees, plants, snow and overhanging ground above the footprint go, top down so nothing
+	 * drops. A two-block plant (a lilac, tall grass) goes bottom half first: the game breaks the
+	 * other half itself when one goes, dropping whatever it drops regardless of the no-drops
+	 * flag, and only the bottom half has anything to drop.
+	 */
 	private static void clearAbove(ServerLevel level, BlockPos origin) {
 		int flags = Block.UPDATE_CLIENTS | Block.UPDATE_SUPPRESS_DROPS;
 		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
@@ -176,12 +193,71 @@ public final class SpawnGazebo {
 			for (int x = 0; x < SIZE; x++) {
 				for (int z = 0; z < SIZE; z++) {
 					pos.set(origin.getX() + x, y, origin.getZ() + z);
-					if (!level.getBlockState(pos).isAir()) {
-						level.setBlock(pos, Blocks.AIR.defaultBlockState(), flags);
+					BlockState state = level.getBlockState(pos);
+					if (state.isAir()) {
+						continue;
+					}
+					if (state.getBlock() instanceof DoublePlantBlock && state.getValue(DoublePlantBlock.HALF) == DoubleBlockHalf.UPPER) {
+						level.setBlock(pos.below(), Blocks.AIR.defaultBlockState(), flags);
+					}
+					level.setBlock(pos, Blocks.AIR.defaultBlockState(), flags);
+				}
+			}
+		}
+	}
+
+	/**
+	 * The canopies of the trees that stood in the footprint are cut off from their trunks now, and
+	 * the game would let them rot away over the next few minutes, scattering sticks and saplings
+	 * round the gazebo. They go now instead, without drops: every natural leaf within reach that
+	 * can't find a log within six leaves, which is how the game decides a leaf has lost its tree.
+	 */
+	private static void clearOrphanedCanopy(ServerLevel level, BlockPos origin) {
+		List<BlockPos> orphans = new ArrayList<>();
+		for (int x = -CANOPY_REACH; x < SIZE + CANOPY_REACH; x++) {
+			for (int z = -CANOPY_REACH; z < SIZE + CANOPY_REACH; z++) {
+				for (int y = 1; y <= CLEAR_HEIGHT + CANOPY_REACH; y++) {
+					BlockPos pos = origin.offset(x, y, z);
+					BlockState state = level.getBlockState(pos);
+					if (state.getBlock() instanceof LeavesBlock && !state.getValue(LeavesBlock.PERSISTENT) && !hasTree(level, pos)) {
+						orphans.add(pos);
 					}
 				}
 			}
 		}
+		for (BlockPos pos : orphans) {
+			level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS | Block.UPDATE_SUPPRESS_DROPS);
+		}
+		if (!orphans.isEmpty()) {
+			SpawnGazeboMod.LOGGER.info("Cleared {} leaves left hanging by the trees that stood at spawn", orphans.size());
+		}
+	}
+
+	/** Whether a leaf still has a log within six leaves of it, counted the way the game does (through leaves only). */
+	private static boolean hasTree(ServerLevel level, BlockPos leaf) {
+		Set<BlockPos> seen = new HashSet<>(Set.of(leaf));
+		List<BlockPos> frontier = List.of(leaf);
+		for (int step = 1; step < LeavesBlock.DECAY_DISTANCE && !frontier.isEmpty(); step++) {
+			List<BlockPos> next = new ArrayList<>();
+			for (BlockPos pos : frontier) {
+				for (Direction direction : Direction.values()) {
+					BlockPos neighbour = pos.relative(direction);
+					if (!seen.add(neighbour)) {
+						continue;
+					}
+					// 0 for a log, a leaf's own distance for leaves, nothing for anything else.
+					OptionalInt distance = LeavesBlock.getOptionalDistanceAt(level.getBlockState(neighbour));
+					if (distance.isPresent() && distance.getAsInt() == 0) {
+						return true;
+					}
+					if (distance.isPresent()) {
+						next.add(neighbour);
+					}
+				}
+			}
+			frontier = next;
+		}
+		return false;
 	}
 
 	/** Stone under every block of the ground layer that has air, water or plants beneath it. */
@@ -199,7 +275,7 @@ public final class SpawnGazebo {
 					if (!state.getCollisionShape(level, pos).isEmpty() && state.getFluidState().isEmpty()) {
 						break;
 					}
-					level.setBlock(pos, stone.defaultBlockState(), Block.UPDATE_CLIENTS);
+					level.setBlock(pos, stone.defaultBlockState(), Block.UPDATE_CLIENTS | Block.UPDATE_SUPPRESS_DROPS);
 				}
 			}
 		}

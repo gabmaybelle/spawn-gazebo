@@ -8,3 +8,4 @@ The first release. The gazebo began life as part of [Espresso Flavoured](https:/
 - **A starter chest,** optional like the bonus chest, with a bed, torches, bread, saplings and a bundle, or the bonus chest's own loot, or any loot table you name. Later players are handed a roll of the same loot, or get their own chest with Lootr.
 - **Protection:** outside creative it can't be broken or built on, and explosions, fire, pistons and buckets leave it alone. It reaches 12 blocks from the middle of the gazebo by default, so the ground around it is kept too; the radius is a setting. Switch off "Protect the Gazebo" to remodel it.
 - Building it moves the world spawn to the middle of the gazebo and sets `spawn_radius` to 0.
+- Building it leaves no litter: the parts of felled trees' canopies that hang outside the footprint are cleared with it rather than left to rot into sticks and saplings, and two-block flowers go without dropping.
