@@ -17,6 +17,18 @@ import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.gamerules.GameRules;
+import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * The settings screen in a real game: from the title screen (where Mod Menu opens it), in a
@@ -36,6 +48,7 @@ public class SpawnGazeboClientTest implements FabricClientGameTest {
 			int radius = world.getServer().computeOnServer(server -> server.overworld().getGameRules().get(GameRules.RESPAWN_RADIUS));
 			check(radius == 0, "building the gazebo sets the spawn radius to 0 (got " + radius + ")");
 			ctx.takeScreenshot("spawn_gazebo_new_world");
+			protection(world.getServer());
 			inWorldSettings(ctx);
 		}
 		try (TestDedicatedServerContext server = ctx.worldBuilder().createServer()) {
@@ -77,6 +90,74 @@ public class SpawnGazeboClientTest implements FabricClientGameTest {
 		Config.chestLoot = Config.STARTER_KIT;
 		Config.protectGazebo = true;
 		Config.save();
+	}
+
+	/**
+	 * A survival player can't break, place or dig a path on the lawn inside the protected radius
+	 * (12 by default), can just outside it, and a creative player can anywhere. Driven through the
+	 * server's own player actions, so the same checks run as when a player clicks.
+	 */
+	private static void protection(TestServerContext server) {
+		server.runCommand("gamemode survival @a");
+		String result = server.computeOnServer(s -> {
+			ServerLevel level = s.overworld();
+			ServerPlayer player = s.getPlayerList().getPlayers().getFirst();
+			BlockPos middle = level.getRespawnData().pos();
+			int ground = middle.getY() - 3;
+			// The lawn 10 blocks out (inside the radius) and 14 out (outside it), off the gazebo's footprint.
+			BlockPos inside = new BlockPos(middle.getX() + 10, ground, middle.getZ());
+			BlockPos outside = new BlockPos(middle.getX() + 14, ground, middle.getZ());
+			StringBuilder failures = new StringBuilder();
+			for (BlockPos pos : new BlockPos[] { inside, outside }) {
+				level.setBlockAndUpdate(pos, Blocks.GRASS_BLOCK.defaultBlockState());
+				level.setBlockAndUpdate(pos.above(), Blocks.AIR.defaultBlockState());
+				level.setBlockAndUpdate(pos.above(2), Blocks.AIR.defaultBlockState());
+			}
+			player.teleportTo(middle.getX() + 12.5, ground + 1, middle.getZ() + 2.5);
+
+			expect(failures, !shovel(player, level, inside), "a shovel makes a path inside the radius");
+			expect(failures, level.getBlockState(inside).is(Blocks.GRASS_BLOCK), "the lawn inside the radius stays grass");
+			expect(failures, shovel(player, level, outside), "a shovel can't make a path outside the radius");
+			expect(failures, level.getBlockState(outside).is(Blocks.DIRT_PATH), "the lawn outside the radius becomes a path");
+
+			expect(failures, !place(player, level, inside), "a block can be placed inside the radius");
+			expect(failures, level.getBlockState(inside.above()).isAir(), "nothing appears on the lawn inside the radius");
+			expect(failures, place(player, level, outside), "a block can't be placed outside the radius");
+			expect(failures, level.getBlockState(outside.above()).is(Blocks.OAK_PLANKS), "the planks appear outside the radius");
+
+			expect(failures, !player.gameMode.destroyBlock(inside), "the lawn inside the radius can be broken");
+			expect(failures, level.getBlockState(inside).is(Blocks.GRASS_BLOCK), "the lawn inside the radius is still there");
+			expect(failures, player.gameMode.destroyBlock(outside.above()), "the planks outside the radius can't be broken");
+
+			player.setGameMode(GameType.CREATIVE);
+			expect(failures, player.gameMode.destroyBlock(inside), "a creative player can't break the lawn inside the radius");
+			player.setGameMode(GameType.SURVIVAL);
+			player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+			return failures.toString();
+		});
+		check(result.isEmpty(), "protection:" + result);
+	}
+
+	/** Uses a shovel on the top of a block, as a right-click would; true if it did anything. */
+	private static boolean shovel(ServerPlayer player, ServerLevel level, BlockPos pos) {
+		return use(player, level, new ItemStack(Items.IRON_SHOVEL), pos);
+	}
+
+	/** Places planks on the top of a block, as a right-click would; true if it did anything. */
+	private static boolean place(ServerPlayer player, ServerLevel level, BlockPos pos) {
+		return use(player, level, new ItemStack(Items.OAK_PLANKS, 4), pos);
+	}
+
+	private static boolean use(ServerPlayer player, ServerLevel level, ItemStack stack, BlockPos pos) {
+		player.setItemInHand(InteractionHand.MAIN_HAND, stack);
+		BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(pos).add(0, 0.5, 0), Direction.UP, pos, false);
+		return player.gameMode.useItemOn(player, level, stack, InteractionHand.MAIN_HAND, hit).consumesAction();
+	}
+
+	private static void expect(StringBuilder failures, boolean ok, String what) {
+		if (!ok) {
+			failures.append("\n  ").append(what);
+		}
 	}
 
 	/** In a world you're hosting, the settings work. */
