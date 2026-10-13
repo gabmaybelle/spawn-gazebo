@@ -15,6 +15,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BiomeTags;
 import net.minecraft.tags.BlockTags;
@@ -26,6 +27,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -126,8 +128,8 @@ public final class SpawnGazebo {
 	/**
 	 * The starter kit is in the chest in the railing (a loot chest, so Lootr can give every player
 	 * their own copy). The starter kit function reads storage {@code spawn_gazebo:spawn} to know
-	 * whether there is a chest, and whether Lootr is here to share it out. With the chest switched
-	 * off, the railing runs across where it would be.
+	 * whether there is a chest, which loot table it rolls, and whether Lootr is here to share it
+	 * out. With the chest switched off, the railing runs across where it would be.
 	 */
 	private static void kitChest(ServerLevel level, BlockPos origin, Rotation rotation) {
 		BlockPos pivot = new BlockPos(HALF, 0, HALF);
@@ -146,6 +148,11 @@ public final class SpawnGazebo {
 			level.getServer().getCommandStorage().set(Identifier.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "spawn"), spawn);
 			return;
 		}
+		// The template's chest holds the starter kit; the setting can swap that for the bonus chest's loot or any other table.
+		Identifier table = Config.chestLootTable();
+		if (level.getBlockEntity(chest) instanceof RandomizableContainerBlockEntity container) {
+			container.setLootTable(ResourceKey.create(Registries.LOOT_TABLE, table));
+		}
 		boolean lootr = FabricLoader.getInstance().isModLoaded("lootr");
 		if (lootr) {
 			// Lootr converts loot chests it finds during world generation; this one came later, so ask it to look again.
@@ -153,6 +160,8 @@ public final class SpawnGazebo {
 					"execute positioned " + chest.getX() + " " + chest.getY() + " " + chest.getZ() + " run lootr force_chunk");
 		}
 		spawn.putBoolean("chest", true);
+		// The function that hands the kit to later players rolls the same table (a macro reads "table").
+		spawn.putString("table", table.toString());
 		if (lootr) {
 			spawn.putBoolean("lootr", true);
 		}

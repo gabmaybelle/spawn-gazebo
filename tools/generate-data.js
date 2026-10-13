@@ -27,16 +27,18 @@ out('data/spawn_gazebo/loot_table/chests/spawn_kit.json', {
 	pools: KIT.map(({ id, count }) => ({ rolls: 1, entries: [{ type: 'minecraft:item', name: id, modifier: count > 1 ? [{ type: 'minecraft:set_count', count }] : [] }] })),
 });
 out('data/spawn_gazebo/function/starter_kit/give.mcfunction', [
-	'# The same kit as the chest holds, handed straight to a player.',
-	...KIT.map(({ id, count }) => `give @s ${id} ${count}`),
+	'# A roll of the same loot table the chest was filled from, handed straight to a player. The table is',
+	'# the "table" entry of storage spawn_gazebo:spawn (a macro line: run this with that storage).',
+	'$loot give @s loot $(table)',
 	'',
 ].join('\n'));
 out('data/spawn_gazebo/function/starter_kit.mcfunction', [
 	'# Runs once per player, on their first join (advancement spawn_gazebo:starter_kit). SpawnGazebo.java',
-	'# sets storage spawn_gazebo:spawn {chest:1b} when it builds the gazebo with its chest. The first player',
-	'# gets the chest; everyone after them is handed the same kit, unless Lootr is giving each player their',
-	'# own copy of the chest ({lootr:1b}). Without the chest, or in a world from before the mod, nothing is given.',
-	'execute if data storage spawn_gazebo:spawn {chest:1b} unless data storage spawn_gazebo:spawn {lootr:1b} if data storage spawn_gazebo:spawn {claimed:1b} run function spawn_gazebo:starter_kit/give',
+	'# sets storage spawn_gazebo:spawn {chest:1b, table:"..."} when it builds the gazebo with its chest. The',
+	'# first player gets the chest; everyone after them is handed a roll of the same loot, unless Lootr is',
+	'# giving each player their own copy of the chest ({lootr:1b}). Without the chest, or in a world from',
+	'# before the mod, nothing is given.',
+	'execute if data storage spawn_gazebo:spawn {chest:1b} unless data storage spawn_gazebo:spawn {lootr:1b} if data storage spawn_gazebo:spawn {claimed:1b} run function spawn_gazebo:starter_kit/give with storage spawn_gazebo:spawn',
 	'execute if data storage spawn_gazebo:spawn {chest:1b} run data merge storage spawn_gazebo:spawn {claimed:1b}',
 	'',
 ].join('\n'));

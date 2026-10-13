@@ -26,14 +26,17 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.DecoratedPotBlock;
+import net.minecraft.world.level.block.FlowerPotBlock;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
 /**
- * Keeps the gazebo standing: inside its box, players outside creative can't break or place
- * blocks or reshape them with tools, and explosions, fire, pistons and buckets leave it alone (see
- * the mixins that call {@link #guards}). The chest, the benches and the flower pots still work, and
- * the two decorated pots can still be broken for what's inside them. {@link Config#protectGazebo}
- * switches it off for anyone who wants to remodel.
+ * Keeps the gazebo standing: inside its box, and as far round it as {@link Config#protectedRadius}
+ * reaches, players outside creative can't break or place blocks or reshape them with tools, and
+ * explosions, fire, pistons and buckets leave it alone (see the mixins that call {@link #guards}).
+ * The chest, the benches and the flower pots still work, and the decorated pots can still be
+ * broken for what's inside them. {@link Config#protectGazebo} switches it off for anyone who wants
+ * to remodel.
  */
 public final class GazeboGuard {
 	/** The gazebo's box in the overworld, saved when it's built. */
@@ -69,9 +72,9 @@ public final class GazeboGuard {
 			return TYPE;
 		}
 
-		/** What to tell players right now: the box while it's protected, nothing otherwise. */
+		/** What to tell players right now: the protected area while it's protected, nothing otherwise. */
 		static Box current() {
-			return new Box(Optional.ofNullable(Config.protectGazebo ? GazeboGuard.box : null));
+			return new Box(Optional.ofNullable(protectedArea()));
 		}
 	}
 
@@ -89,11 +92,17 @@ public final class GazeboGuard {
 		});
 		PlayerBlockBreakEvents.BEFORE.register((level, player, pos, state, blockEntity) ->
 				state.getBlock() instanceof DecoratedPotBlock || !protects(level, player, pos));
-		// Tools that turn one block into another: stripping, paths, farmland.
+		// Tools that turn one block into another: stripping, scraping the copper, paths, farmland. The
+		// chest, the pots and anything else you open or take from still works with a tool in hand.
 		UseBlockCallback.EVENT.register((player, level, hand, hit) -> {
 			ItemStack stack = player.getItemInHand(hand);
 			boolean reshapes = stack.is(ItemTags.AXES) || stack.is(ItemTags.SHOVELS) || stack.is(ItemTags.HOES);
-			return reshapes && protects(level, player, hit.getBlockPos()) ? InteractionResult.FAIL : InteractionResult.PASS;
+			if (!reshapes || !protects(level, player, hit.getBlockPos())) {
+				return InteractionResult.PASS;
+			}
+			BlockState state = level.getBlockState(hit.getBlockPos());
+			boolean opens = state.hasBlockEntity() || state.getBlock() instanceof FlowerPotBlock;
+			return opens ? InteractionResult.PASS : InteractionResult.FAIL;
 		});
 	}
 
@@ -119,11 +128,26 @@ public final class GazeboGuard {
 	}
 
 	/**
-	 * True when {@code pos} is part of the gazebo and it's being protected. On the server that's the
-	 * saved box and the setting; on a player's game it's what the server said when they joined.
+	 * On the server: the area being protected right now, or null when there's no gazebo or the
+	 * setting is off. It's the gazebo's own box widened to {@link Config#protectedRadius} from the
+	 * middle, so the ground round the gazebo is kept as it was too.
+	 */
+	private static BoundingBox protectedArea() {
+		BoundingBox built = box;
+		if (built == null || !Config.protectGazebo) {
+			return null;
+		}
+		int extra = Math.max(0, Config.protectedRadius - SpawnGazebo.HALF);
+		return extra == 0 ? built : built.inflatedBy(extra, 0, extra);
+	}
+
+	/**
+	 * True when {@code pos} is in the protected area round the gazebo. On the server that's the
+	 * saved box, the radius and the setting; on a player's game it's what the server said when they
+	 * joined.
 	 */
 	public static boolean guards(Level level, BlockPos pos) {
-		BoundingBox current = level.isClientSide() ? clientBox : Config.protectGazebo ? box : null;
+		BoundingBox current = level.isClientSide() ? clientBox : protectedArea();
 		return current != null && level.dimension() == Level.OVERWORLD && current.isInside(pos);
 	}
 
