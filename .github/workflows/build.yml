@@ -1,8 +1,12 @@
-# Builds the mod on every push and pull request, so a broken build shows up straight away.
-# The built jars are attached to each run under "Artifacts".
+# Builds the mod on every push and pull request, then runs the in-game test (src/gametest) on a
+# virtual display, so a broken build or a crash in game shows up straight away. The built jars
+# are attached to each run under "Artifacts", and the game test's screenshots alongside them.
 
 name: build
 on: [pull_request, push]
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -21,6 +25,22 @@ jobs:
         run: chmod +x ./gradlew
       - name: build
         run: ./gradlew build
+      - name: install EGL
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq libegl1 libegl-mesa0
+      - name: run game test
+        # 26.3 asks for an sRGB-capable window, which Xvfb's GLX can't give, so the game would
+        # hang at startup. Mesa's EGL can; SDL uses it with this set.
+        env:
+          SDL_VIDEO_FORCE_EGL: '1'
+        timeout-minutes: 15
+        run: xvfb-run -a ./gradlew runClientGameTest
+      - name: capture game test screenshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: Game test screenshots
+          path: build/run/clientGameTest/screenshots/
+          if-no-files-found: ignore
       - name: capture build artifacts
         uses: actions/upload-artifact@v7
         with:
