@@ -20,6 +20,7 @@ import net.minecraft.world.level.gamerules.GameRules;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -46,6 +47,11 @@ public class SpawnGazeboClientTest implements FabricClientGameTest {
 			CompoundTag spawn = world.getServer().computeOnServer(server -> server.getCommandStorage()
 					.get(Identifier.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "spawn")));
 			check(spawn.getBooleanOr("chest", false), "a new world gets the gazebo, with its starter chest");
+			if (FabricLoader.getInstance().isModLoaded("lootr")) {
+				lootrChest(world.getServer());
+			} else {
+				check(spawn.getBooleanOr("claimed", false), "the first player to join claims the chest's kit");
+			}
 			int radius = world.getServer().computeOnServer(server -> server.overworld().getGameRules().get(GameRules.RESPAWN_RADIUS));
 			check(radius == 0, "building the gazebo sets the spawn radius to 0 (got " + radius + ")");
 			ctx.takeScreenshot("spawn_gazebo_new_world");
@@ -189,6 +195,30 @@ public class SpawnGazeboClientTest implements FabricClientGameTest {
 		if (!ok) {
 			failures.append("\n  ").append(what);
 		}
+	}
+
+	/**
+	 * With Lootr, the starter chest becomes a Lootr chest (everyone gets their own copy), so the
+	 * kit isn't handed out on joining and the chest still rolls the starter kit.
+	 */
+	private static void lootrChest(TestServerContext server) {
+		String result = server.computeOnServer(s -> {
+			ServerLevel level = s.overworld();
+			CompoundTag spawn = s.getCommandStorage().get(Identifier.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "spawn"));
+			if (!spawn.getBooleanOr("lootr", false)) {
+				return "the gazebo noted that Lootr is installed";
+			}
+			BlockPos middle = level.getRespawnData().pos();
+			for (BlockPos pos : BlockPos.betweenClosed(middle.offset(-8, -3, -8), middle.offset(8, 3, 8))) {
+				Identifier id = BuiltInRegistries.BLOCK.getKey(level.getBlockState(pos).getBlock());
+				if (id.getNamespace().equals("lootr") && id.getPath().contains("chest")) {
+					boolean kitHandedOut = s.getPlayerList().getPlayers().getFirst().getInventory().contains(new ItemStack(Items.TORCH));
+					return kitHandedOut ? "with Lootr the kit isn't handed out on joining" : "";
+				}
+			}
+			return "the starter chest became a Lootr chest";
+		});
+		check(result.isEmpty(), result);
 	}
 
 	/** In a world you're hosting, the settings work. */

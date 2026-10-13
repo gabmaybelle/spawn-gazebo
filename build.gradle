@@ -4,6 +4,14 @@ plugins {
 
 repositories {
 	maven { url = 'https://maven.terraformersmc.com/releases/' }
+	exclusiveContent {
+		forRepository {
+			maven { url = 'https://api.modrinth.com/maven' }
+		}
+		filter {
+			includeGroup 'maven.modrinth'
+		}
+	}
 }
 
 loom {
@@ -21,6 +29,12 @@ dependencies {
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 	// Mod Menu: only for the Config button; not bundled or required.
 	compileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
+
+	// `./gradlew runClientGameTest -PtestLootr` runs the game test with Lootr installed
+	// (Modrinth version id gVwn7m2v: Lootr 1.25.42.124 for Fabric 26.3). Not bundled or required.
+	if (project.hasProperty("testLootr")) {
+		runtimeOnly "maven.modrinth:lootr:gVwn7m2v"
+	}
 }
 
 processResources {
