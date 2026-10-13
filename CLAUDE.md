@@ -27,6 +27,9 @@ protection round it. See README.md for what players get.
   belongs in the other too.
 - **The structure files are generated.** Edit `tools/generate-spawn.js` and re-run
   `node tools/generate-data.js`; don't edit the `.nbt` files.
+- **Lootr:** with Lootr installed the chest becomes a Lootr chest. Lootr 1.25.42 converts it by
+  itself; the `lootr force_chunk` command SpawnGazebo sends is kept as a safety net for Lootr
+  versions that don't. `-PtestLootr` checks the result.
 - The gazebo is built by the server when the world is created, so its log lines are in the
   server's log, not the client's.
 
