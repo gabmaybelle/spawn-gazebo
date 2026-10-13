@@ -1,0 +1,15 @@
+{
+	"schemaVersion": 1,
+	"id": "spawn_gazebo_gametest",
+	"version": "1.0.0",
+	"name": "Spawn Gazebo game tests",
+	"environment": "*",
+	"entrypoints": {
+		"fabric-client-gametest": [
+			"com.gabbymaybelle.spawngazebo.SpawnGazeboClientTest"
+		]
+	},
+	"depends": {
+		"spawn_gazebo": "*"
+	}
+}

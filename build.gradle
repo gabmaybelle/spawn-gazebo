@@ -52,3 +52,16 @@ jar {
 		rename { "${it}_$projectName"}
 	}
 }
+
+// Client game tests: `./gradlew runClientGameTest` starts a real game, opens the settings screen
+// (from the title screen, in a world and on a server) and checks a new world gets its gazebo.
+// The tests live in src/gametest; nothing there ships in the jar.
+fabricApi {
+	configureTests {
+		createSourceSet = true
+		modId = "spawn_gazebo_gametest"
+		enableGameTests = false
+		enableClientGameTests = true
+		eula = true
+	}
+}
