@@ -3,21 +3,32 @@ package com.gabbymaybelle.spawngazebo;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.List;
+import java.util.Locale;
 import java.util.Properties;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.resources.Identifier;
 
 /**
- * Settings in {@code config/spawn_gazebo.properties}. Missing keys get their defaults and the file
- * is rewritten with every key, so players can see what exists. Read at startup; the settings screen
- * changes them as you play.
+ * Settings in {@code config/spawn_gazebo.properties}. Missing keys get their defaults, and the file
+ * is only written when it's missing a setting (so players can see what exists) or the settings
+ * screen changes one; a value that can't be read keeps its default and says so in the log.
+ * Settings this version doesn't know are kept. Read at startup; the settings screen changes them
+ * as you play.
  */
 public final class Config {
 	private static final Path FILE = FabricLoader.getInstance().getConfigDir().resolve(SpawnGazeboMod.MOD_ID + ".properties");
 	/** Written to the file, so a later version can tell an older file apart if it ever needs to change one. */
 	private static final int CONFIG_VERSION = 1;
+	/** Every setting the file should have; the file is written when one is missing. */
+	private static final List<String> KEYS = List.of("spawnGazebo", "starterChest", "chestLoot", "protectGazebo",
+			"protectedRadius", "configVersion");
+	/** The file as it was read, so settings from a newer version (or added by hand) survive a save. */
+	private static Properties loaded = new Properties();
 
 	/** The mod's own kit: a bed, torches, bread, saplings and a bundle. */
 	public static final String STARTER_KIT = "starter_kit";
@@ -73,19 +84,27 @@ public final class Config {
 		chestLoot = props.getProperty("chestLoot", chestLoot).trim();
 		protectGazebo = bool(props, "protectGazebo", protectGazebo);
 		protectedRadius = Math.max(MIN_RADIUS, Math.min(MAX_RADIUS, integer(props, "protectedRadius", protectedRadius)));
-		save();
+		loaded = props;
+		// Only write when there's something to add: a new file or a new setting.
+		if (!KEYS.stream().allMatch(props::containsKey)) {
+			save();
+		}
 	}
 
 	/** Writes every setting back to the file (called after loading and from the settings screen). */
 	public static void save() {
 		Properties props = new Properties();
+		props.putAll(loaded);
 		props.setProperty("spawnGazebo", Boolean.toString(spawnGazebo));
 		props.setProperty("starterChest", Boolean.toString(starterChest));
 		props.setProperty("chestLoot", chestLoot);
 		props.setProperty("protectGazebo", Boolean.toString(protectGazebo));
 		props.setProperty("protectedRadius", Integer.toString(protectedRadius));
 		props.setProperty("configVersion", Integer.toString(CONFIG_VERSION));
-		try (Writer writer = Files.newBufferedWriter(FILE)) {
+		// Written to a temporary file first and then swapped in, so a crash part-way through never
+		// leaves a half-written or empty settings file.
+		Path temp = FILE.resolveSibling(FILE.getFileName() + ".tmp");
+		try (Writer writer = Files.newBufferedWriter(temp)) {
 			props.store(writer, "Spawn Gazebo (also editable in game: Mod Menu > Spawn Gazebo > Config)\n"
 					+ "spawnGazebo: a little round stone gazebo at the world spawn of new worlds\n"
 					+ "starterChest: a chest in the gazebo's railing, like the bonus chest\n"
@@ -96,12 +115,31 @@ public final class Config {
 					+ "spawnGazebo, starterChest and chestLoot only matter when a world is created; the protection settings apply straight away");
 		} catch (IOException e) {
 			SpawnGazeboMod.LOGGER.warn("Spawn Gazebo: couldn't write {}", FILE, e);
+			return;
+		}
+		try {
+			try {
+				Files.move(temp, FILE, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+			} catch (AtomicMoveNotSupportedException e) {
+				Files.move(temp, FILE, StandardCopyOption.REPLACE_EXISTING);
+			}
+		} catch (IOException e) {
+			SpawnGazeboMod.LOGGER.warn("Spawn Gazebo: couldn't write {}", FILE, e);
 		}
 	}
 
 	private static boolean bool(Properties props, String key, boolean fallback) {
 		String value = props.getProperty(key);
-		return value == null ? fallback : Boolean.parseBoolean(value.trim());
+		if (value == null) {
+			return fallback;
+		}
+		String v = value.trim().toLowerCase(Locale.ROOT);
+		if (v.equals("true") || v.equals("false")) {
+			return v.equals("true");
+		}
+		// A typo shouldn't quietly switch a setting off (the protection, say): keep the default and say so.
+		SpawnGazeboMod.LOGGER.warn("Spawn Gazebo: {} should be true or false, not \"{}\"; using {}", key, value.trim(), fallback);
+		return fallback;
 	}
 
 	private static int integer(Properties props, String key, int fallback) {

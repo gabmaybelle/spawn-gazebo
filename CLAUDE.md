@@ -17,7 +17,7 @@ protection round it. See README.md for what players get.
 ## Build and test
 
 - `./gradlew build`: jar in `build/libs/`.
-- `./gradlew runClientGameTest`: the settings screen (title screen, in a world, greyed out on a
+- `./gradlew runClientGameTest`: the settings file (typos, unknown settings, safe saving), the settings screen (title screen, in a world, greyed out on a
   server), saving, a new world's gazebo, and protection inside and just outside the radius.
 
 ## Gotchas

@@ -10,3 +10,4 @@ The first release. The gazebo began life as part of [Espresso Flavoured](https:/
 - Building it moves the world spawn to the middle of the gazebo and sets `spawn_radius` to 0.
 - Building it leaves no litter: the parts of felled trees' canopies that hang outside the footprint are cleared with it rather than left to rot into sticks and saplings, and two-block flowers go without dropping.
 - No lava on the doorstep: a lava pool at the surface within 16 blocks of the gazebo (or the protected radius, if that's wider) is set to stone when it's built, the whole pool, not just the part inside that distance.
+- Settings are saved safely: the file is never left half-written if the game crashes while saving, a typo in a setting ("ture") keeps its default and says so in the log rather than switching it off, and notes you add or settings the mod doesn't know about are kept.

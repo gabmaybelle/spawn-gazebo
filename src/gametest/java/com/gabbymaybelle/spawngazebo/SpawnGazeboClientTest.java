@@ -39,6 +39,7 @@ import net.minecraft.world.phys.Vec3;
 public class SpawnGazeboClientTest implements FabricClientGameTest {
 	@Override
 	public void runTest(ClientGameTestContext ctx) {
+		settingsFile();
 		titleScreenSettings(ctx);
 		try (TestSingleplayerContext world = ctx.worldBuilder().create()) {
 			world.getConnection().waitForChunksRender();
@@ -56,6 +57,36 @@ public class SpawnGazeboClientTest implements FabricClientGameTest {
 				connection.waitForChunksRender();
 				onServerSettings(ctx);
 			}
+		}
+	}
+
+	/**
+	 * The settings file: a typo keeps the default instead of switching the protection off, case and
+	 * spaces don't matter, a setting from a newer version survives, no temporary file is left
+	 * behind, and a complete file isn't rewritten just by loading it (so notes added by hand stay).
+	 */
+	private static void settingsFile() {
+		java.nio.file.Path file = FabricLoader.getInstance().getConfigDir().resolve(SpawnGazeboMod.MOD_ID + ".properties");
+		try {
+			Files.writeString(file, "protectGazebo=ture\nstarterChest= FALSE \nfutureSetting=hello\n");
+			Config.load();
+			check(Config.protectGazebo, "a typo (\"ture\") leaves Protect the Gazebo on, its default");
+			check(!Config.starterChest, "\" FALSE \" reads as false");
+			String written = Files.readString(file);
+			check(written.contains("futureSetting=hello"), "a setting this version doesn't know is kept");
+			check(written.contains("protectedRadius=12"), "missing settings are written with their defaults");
+			check(!Files.exists(file.resolveSibling(file.getFileName() + ".tmp")), "no temporary file is left behind");
+
+			String complete = "# a note added by hand\n" + written;
+			Files.writeString(file, complete);
+			Config.load();
+			check(Files.readString(file).equals(complete), "loading a complete file leaves it exactly as it was");
+		} catch (IOException e) {
+			throw new AssertionError("couldn't use the settings file", e);
+		} finally {
+			Config.starterChest = true;
+			Config.protectGazebo = true;
+			Config.save();
 		}
 	}
 
