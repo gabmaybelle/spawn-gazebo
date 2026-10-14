@@ -99,7 +99,7 @@ public final class SpawnGazebo {
 			try {
 				place(level);
 			} catch (RuntimeException e) {
-				SpawnGazeboMod.LOGGER.error("Couldn't build the spawn gazebo", e);
+				SpawnGazeboMod.LOGGER.error("Spawn Gazebo: couldn't build the gazebo", e);
 			}
 		});
 	}
@@ -120,7 +120,7 @@ public final class SpawnGazebo {
 		Identifier id = Identifier.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "spawn/gazebo_" + palette + "_" + wood);
 		Optional<StructureTemplate> template = level.getStructureTemplateManager().get(id);
 		if (template.isEmpty()) {
-			SpawnGazeboMod.LOGGER.warn("No spawn gazebo template {}", id);
+			SpawnGazeboMod.LOGGER.warn("Spawn Gazebo: no gazebo template {}", id);
 			return;
 		}
 		BlockPos origin = new BlockPos(cx - HALF, ground, cz - HALF);
@@ -142,7 +142,7 @@ public final class SpawnGazebo {
 		// Everyone starts in the gazebo itself rather than somewhere within ten blocks of it.
 		level.getGameRules().set(GameRules.RESPAWN_RADIUS, 0, level.getServer());
 		kitChest(level, origin, rotation);
-		SpawnGazeboMod.LOGGER.info("Built the spawn gazebo ({} {}) at {}", palette, wood, middle);
+		SpawnGazeboMod.LOGGER.info("Spawn Gazebo: built the gazebo ({} {}) at {}", palette, wood, middle);
 	}
 
 	/**
@@ -155,7 +155,7 @@ public final class SpawnGazebo {
 		BlockPos pivot = new BlockPos(HALF, 0, HALF);
 		BlockPos chest = origin.offset(StructureTemplate.transform(CHEST, Mirror.NONE, rotation, pivot));
 		if (!(level.getBlockState(chest).getBlock() instanceof ChestBlock)) {
-			SpawnGazeboMod.LOGGER.warn("No starter kit chest at {} in the spawn gazebo", chest);
+			SpawnGazeboMod.LOGGER.warn("Spawn Gazebo: no starter kit chest at {} in the gazebo", chest);
 			return;
 		}
 		CompoundTag spawn = new CompoundTag();
@@ -237,7 +237,7 @@ public final class SpawnGazebo {
 			level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS | Block.UPDATE_SUPPRESS_DROPS);
 		}
 		if (!orphans.isEmpty()) {
-			SpawnGazeboMod.LOGGER.info("Cleared {} leaves left hanging by the trees that stood at spawn", orphans.size());
+			SpawnGazeboMod.LOGGER.info("Spawn Gazebo: cleared {} leaves left hanging by the trees that stood at spawn", orphans.size());
 		}
 	}
 
@@ -332,7 +332,7 @@ public final class SpawnGazebo {
 			}
 		}
 		if (cooled > 0) {
-			SpawnGazeboMod.LOGGER.info("Set {} blocks of lava near the gazebo to stone", cooled);
+			SpawnGazeboMod.LOGGER.info("Spawn Gazebo: set {} blocks of lava near the gazebo to stone", cooled);
 		}
 	}
 
