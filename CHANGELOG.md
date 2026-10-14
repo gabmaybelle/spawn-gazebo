@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.0
+
+- A mod can bring its own starter kit for the chest: Espresso Flavoured Core now includes Spawn
+  Gazebo and fills the chest with its kit this way. Your own `chestLoot` setting still wins.
+- The benches can be sat on with a tool in hand, where a mod lets you sit on stairs. Before, the
+  protection stepped in first and nothing happened.
+
 ## 1.0.0
 
 The first release. The gazebo began life as part of [Espresso Flavoured](https://github.com/gabmaybelle/espresso-flavoured) and is now a mod of its own.

@@ -22,9 +22,11 @@ protection round it. See README.md for what players get.
 
 ## Gotchas
 
-- **The gazebo builder has a twin** in Espresso Flavoured Core
-  (`content/SpawnGazebo.java`, github.com/gabmaybelle/espresso-flavoured). A fix to one usually
-  belongs in the other too.
+- **Espresso Flavoured Core bundles this mod** (github.com/gabmaybelle/espresso-flavoured,
+  `libs/spawn-gazebo-<version>.jar`, jar-in-jar) and fills the chest with its own kit through
+  fabric.mod.json `custom.spawn_gazebo.starter_kit` (see `Config.starterKitTable`). After a
+  release here, copy the jar into Espresso's libs/ and bump the version there. Espresso's Seat
+  sits players on the benches, which is why the guard lets wooden stairs through with a tool in hand.
 - **The structure files are generated.** Edit `tools/generate-spawn.js` and re-run
   `node tools/generate-data.js`; don't edit the `.nbt` files.
 - **Lootr:** with Lootr installed the chest becomes a Lootr chest. Lootr 1.25.42 converts it by

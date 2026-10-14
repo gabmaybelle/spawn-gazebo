@@ -9,6 +9,8 @@ import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestDedicatedServerContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.minecraft.world.InteractionResult;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.events.ContainerEventHandler;
@@ -169,6 +171,17 @@ public class SpawnGazeboClientTest implements FabricClientGameTest {
 			player.setGameMode(GameType.CREATIVE);
 			expect(failures, player.gameMode.destroyBlock(inside), "a creative player can't break the lawn inside the radius");
 			player.setGameMode(GameType.SURVIVAL);
+
+			// A bench (wooden stairs) right-clicked with a tool in hand is let through, so a mod that
+			// seats you on stairs still works; the lawn beside it with the same axe is refused.
+			level.setBlockAndUpdate(inside, Blocks.GRASS_BLOCK.defaultBlockState());
+			BlockPos bench = inside.east();
+			level.setBlockAndUpdate(bench, Blocks.OAK_STAIRS.defaultBlockState());
+			expect(failures, useCallback(player, level, new ItemStack(Items.IRON_AXE), bench) == InteractionResult.PASS,
+					"a bench inside the radius can be right-clicked with an axe in hand");
+			expect(failures, useCallback(player, level, new ItemStack(Items.IRON_AXE), inside) == InteractionResult.FAIL,
+					"the lawn inside the radius is refused to an axe");
+			level.setBlockAndUpdate(bench, Blocks.AIR.defaultBlockState());
 			player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
 			return failures.toString();
 		});
@@ -189,6 +202,13 @@ public class SpawnGazeboClientTest implements FabricClientGameTest {
 		player.setItemInHand(InteractionHand.MAIN_HAND, stack);
 		BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(pos).add(0, 0.5, 0), Direction.UP, pos, false);
 		return player.gameMode.useItemOn(player, level, stack, InteractionHand.MAIN_HAND, hit).consumesAction();
+	}
+
+	/** What the guard's right-click check says (every registered use-block callback, in fact) about this item on this block. */
+	private static InteractionResult useCallback(ServerPlayer player, ServerLevel level, ItemStack stack, BlockPos pos) {
+		player.setItemInHand(InteractionHand.MAIN_HAND, stack);
+		BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(pos).add(0, 0.5, 0), Direction.UP, pos, false);
+		return UseBlockCallback.EVENT.invoker().interact(player, level, InteractionHand.MAIN_HAND, hit);
 	}
 
 	private static void expect(StringBuilder failures, boolean ok, String what) {

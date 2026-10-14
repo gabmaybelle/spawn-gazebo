@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
 import net.fabricmc.loader.api.FabricLoader;
+import net.fabricmc.loader.api.ModContainer;
+import net.fabricmc.loader.api.metadata.CustomValue;
 import net.minecraft.resources.Identifier;
 
 /**
@@ -57,7 +59,7 @@ public final class Config {
 	public static Identifier chestLootTable() {
 		String value = chestLoot.trim();
 		if (value.isEmpty() || value.equals(STARTER_KIT)) {
-			return STARTER_KIT_TABLE;
+			return starterKitTable();
 		}
 		if (value.equals(BONUS_CHEST)) {
 			return BONUS_CHEST_TABLE;
@@ -68,6 +70,32 @@ public final class Config {
 			return STARTER_KIT_TABLE;
 		}
 		return id;
+	}
+
+	/**
+	 * The starter kit: Spawn Gazebo's own, unless a mod brings one of its own for the pack it's in.
+	 * A mod says so in its fabric.mod.json: {@code "custom": {"spawn_gazebo": {"starter_kit": "<loot table id>"}}}.
+	 * (Espresso Flavoured Core bundles this mod and fills the chest with its own kit this way.)
+	 */
+	public static Identifier starterKitTable() {
+		for (ModContainer mod : FabricLoader.getInstance().getAllMods()) {
+			CustomValue custom = mod.getMetadata().getCustomValue(SpawnGazeboMod.MOD_ID);
+			if (custom == null || custom.getType() != CustomValue.CvType.OBJECT) {
+				continue;
+			}
+			CustomValue table = custom.getAsObject().get("starter_kit");
+			if (table == null || table.getType() != CustomValue.CvType.STRING) {
+				continue;
+			}
+			Identifier id = Identifier.tryParse(table.getAsString());
+			if (id == null) {
+				SpawnGazeboMod.LOGGER.warn("Spawn Gazebo: {} names a starter kit that isn't a loot table id: \"{}\"",
+						mod.getMetadata().getId(), table.getAsString());
+				continue;
+			}
+			return id;
+		}
+		return STARTER_KIT_TABLE;
 	}
 
 	static void load() {

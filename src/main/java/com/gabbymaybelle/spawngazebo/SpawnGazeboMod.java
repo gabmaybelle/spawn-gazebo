@@ -28,7 +28,7 @@ public class SpawnGazeboMod implements ModInitializer {
 		// The gazebo structures, the starter chest's loot table and the functions that hand out the kit.
 		ResourceLoader.registerBuiltinPack(Identifier.fromNamespaceAndPath(MOD_ID, "spawn_gazebo_data"), mod,
 				Component.translatable("pack.spawn_gazebo.data"), PackActivationType.ALWAYS_ENABLED);
-		LOGGER.info("Spawn Gazebo: ready (gazebo {}, starter chest {} with {}, protected {} to {} blocks)",
-				Config.spawnGazebo, Config.starterChest, Config.chestLoot, Config.protectGazebo, Config.protectedRadius);
+		LOGGER.info("Spawn Gazebo: ready (gazebo {}, starter chest {} with {} ({}), protected {} to {} blocks)",
+				Config.spawnGazebo, Config.starterChest, Config.chestLoot, Config.chestLootTable(), Config.protectGazebo, Config.protectedRadius);
 	}
 }

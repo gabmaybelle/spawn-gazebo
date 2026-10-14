@@ -19,6 +19,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
@@ -101,8 +102,10 @@ public final class GazeboGuard {
 				return InteractionResult.PASS;
 			}
 			BlockState state = level.getBlockState(hit.getBlockPos());
-			boolean opens = state.hasBlockEntity() || state.getBlock() instanceof FlowerPotBlock;
-			return opens ? InteractionResult.PASS : InteractionResult.FAIL;
+			// The benches are wooden stairs, which no tool changes; a mod that lets you sit on stairs
+			// (Espresso Flavoured Core does) still gets its turn with a tool in hand.
+			boolean harmless = state.hasBlockEntity() || state.getBlock() instanceof FlowerPotBlock || state.is(BlockTags.WOODEN_STAIRS);
+			return harmless ? InteractionResult.PASS : InteractionResult.FAIL;
 		});
 	}
 

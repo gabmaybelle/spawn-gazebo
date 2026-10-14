@@ -22,7 +22,7 @@ In `config/spawn_gazebo.properties`, or in game through [Mod Menu](https://modri
 |---|---|---|
 | `spawnGazebo` | on | Build the gazebo in new worlds. Only matters when a world is created. |
 | `starterChest` | on | Put the starter chest in the gazebo. Off, the railing runs across its spot and no kit is handed out. Only matters when a world is created. |
-| `chestLoot` | `starter_kit` | What the chest holds: `starter_kit`, `bonus_chest` (vanilla's bonus chest loot), or any loot table id, such as `minecraft:chests/village/village_plains_house`. Only matters when a world is created. |
+| `chestLoot` | `starter_kit` | What the chest holds: `starter_kit`, `bonus_chest` (vanilla's bonus chest loot), or any loot table id, such as `minecraft:chests/village/village_plains_house`. Only matters when a world is created. A mod that includes Spawn Gazebo can bring its own starter kit (Espresso Flavoured Core does); `starter_kit` then means that one. |
 | `protectGazebo` | on | Keep the gazebo from being changed outside creative. Switch off to remodel it. |
 | `protectedRadius` | 12 | How far from the middle of the gazebo the protection reaches, in blocks: 7 is the gazebo itself, up to 64. |
 
