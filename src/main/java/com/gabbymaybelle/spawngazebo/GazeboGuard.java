@@ -84,7 +84,8 @@ public final class GazeboGuard {
 
 	static void register() {
 		PayloadTypeRegistry.clientboundPlay().register(Box.TYPE, Box.CODEC);
-		ServerLifecycleEvents.SERVER_STARTED.register(server -> box = load(server.overworld()));
+		// The box saved when the gazebo was built, or null when this world has none.
+		ServerLifecycleEvents.SERVER_STARTED.register(server -> box = server.overworld().getAttached(BOX));
 		ServerLifecycleEvents.SERVER_STOPPED.register(server -> box = null);
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
 			if (ServerPlayNetworking.canSend(handler.player, Box.TYPE.id())) {
@@ -157,10 +158,5 @@ public final class GazeboGuard {
 	/** {@link #guards}, unless it's a creative player doing it (so the gazebo can still be edited). */
 	public static boolean protects(Level level, Entity entity, BlockPos pos) {
 		return !(entity instanceof Player player && player.isCreative()) && guards(level, pos);
-	}
-
-	/** The box saved when the gazebo was built, or null when this world has none. */
-	private static BoundingBox load(ServerLevel level) {
-		return level.getAttached(BOX);
 	}
 }

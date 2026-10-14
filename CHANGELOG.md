@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.1
+
+- A `chestLoot` that isn't a loot table id now falls back to the pack's own starter kit (Espresso
+  Flavoured Core's, say), not Spawn Gazebo's.
+- If another mod has changed the game code the protection hooks into, the game now stops with a
+  clear message instead of running with the gazebo quietly unprotected.
+
 ## 1.1.0
 
 - A mod can bring its own starter kit for the chest: Espresso Flavoured Core now includes Spawn

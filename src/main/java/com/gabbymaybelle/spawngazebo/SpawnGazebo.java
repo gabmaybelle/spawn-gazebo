@@ -25,7 +25,6 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BiomeTags;
 import net.minecraft.tags.BlockTags;
-import net.minecraft.tags.FluidTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
@@ -337,8 +336,9 @@ public final class SpawnGazebo {
 		}
 	}
 
+	/** A lava block (flowing or still), not lava inside a waterlogged-style block. */
 	private static boolean isLava(ServerLevel level, BlockPos pos) {
-		return level.getFluidState(pos).is(FluidTags.LAVA) && level.getBlockState(pos).is(Blocks.LAVA);
+		return level.getBlockState(pos).is(Blocks.LAVA);
 	}
 
 	private static boolean dry(Holder<Biome> biome) {

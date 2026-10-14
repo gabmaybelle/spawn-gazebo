@@ -67,7 +67,7 @@ public final class Config {
 		Identifier id = Identifier.tryParse(value);
 		if (id == null) {
 			SpawnGazeboMod.LOGGER.warn("Spawn Gazebo: chestLoot \"{}\" isn't a loot table id, using the starter kit", value);
-			return STARTER_KIT_TABLE;
+			return starterKitTable();
 		}
 		return id;
 	}
