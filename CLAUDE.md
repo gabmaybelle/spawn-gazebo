@@ -48,13 +48,13 @@ One job per mod, decided 2026-10-15, so nothing is done twice and each repo tell
   data pack of the recipes.
 - **Espresso Flavoured Core** (espresso-flavoured): the café: coffee you grow and brew, mugs,
   baristas, Bean Coins, the café charms, and Drowsy (coffee's reason to exist). Longer days stay a
-  Core setting for now. The survival rules Cozy Core now covers leave Core in 0.4.0 (its PLAN-0.4.0.md).
+  Core setting for now. The survival rules Cozy Core now covers left Core in 0.4.0 (its PLAN-0.4.0.md).
 - **Spawn Gazebo** (spawn-gazebo): the gazebo at the world spawn and its starter chest.
 - **Nightfall Clock** (nightfall-clock): the clock above the hotbar and the dusk warning.
 - **Pocket List** (pocket-list): the gathering checklist.
 - **Espresso Flavoured** (espresso-flavoured-pack): the modpack that puts them together. Since
-  2026-10-14 it carries Cozy Core, Spawn Gazebo, Nightfall Clock and Pocket List, not Espresso
-  Flavoured Core.
+  pack 0.5.0 (2026-10-15) it carries all five: Cozy Core, Espresso Flavoured Core (back as the café
+  once it stopped doing Cozy Core's jobs), Spawn Gazebo, Nightfall Clock and Pocket List.
 
 A new feature goes in the mod whose job it is. If none fits, ask Gabby before adding it anywhere.
 
