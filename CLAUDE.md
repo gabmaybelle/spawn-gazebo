@@ -4,6 +4,9 @@ A small Fabric mod for Minecraft 26.3 (mod ID `spawn_gazebo`): new worlds start 
 gazebo with a copper dome, built once at the world spawn, with an optional starter chest and
 protection round it. See README.md for what players get.
 
+`PROGRESS.md` says what's done, what's broken and what's next, with a row per session: read
+it first, and add this session's row before ending.
+
 ## Layout
 
 - `src/main/java/com/gabbymaybelle/spawngazebo/`: `SpawnGazebo.java` (choosing the wood and
@@ -46,6 +49,15 @@ computer and others in the cloud. These rules keep their work fitting together.
 - Start from the latest `main` (`git pull`), and say in the branch's last commit or a short note
   what is finished and what isn't.
 
+**Commits are made one at a time, by hand.** Never commit or push from a chained script. Run
+the test, read its result (and the screenshot, for anything visual), then commit that one
+branch, then push it. A cherry-pick that conflicts stops the work until it is resolved by hand.
+A worldgen or balance change is tested on every terrain in the branch's matrix before it goes
+to any other branch. (Learned on Beyond the Dragon, 2026-10-14, when scripted chains committed
+a conflicted cherry-pick, put one branch's files on another, and sent an untested ore change to
+all three branches.) For a Gradle game test use the toolkit's watcher (`~/.claude/CLAUDE.md`),
+not a wait loop.
+
 **Commits.**
 - Author and committer are always `gabmaybelle <211247938+gabmaybelle@users.noreply.github.com>`:
   `git -c user.name=gabmaybelle -c user.email=211247938+gabmaybelle@users.noreply.github.com commit ...`.
@@ -63,6 +75,8 @@ or test names. Check the diff for these before every push.
   a commit. The game test opens a real game window for a minute or two.
 - A new or changed check should fail with the feature switched off: run it that way once, then
   put the code back. A check that compares against the setting it tests proves nothing.
+- A data change (worldgen, loot, a template, a pack's mod list) gets the same proof: run the part
+  of the test that sees it, and quote the numbers in the progress row.
 - On Linux without a screen, run game tests under `xvfb-run -a`. 26.3 also needs
   `SDL_VIDEO_FORCE_EGL=1` with `libegl1 libegl-mesa0` installed, or the game hangs at startup.
 
