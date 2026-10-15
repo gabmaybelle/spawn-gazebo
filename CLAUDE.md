@@ -38,6 +38,26 @@ it first, and add this session's row before ending.
 - The gazebo is built by the server when the world is created, so its log lines are in the
   server's log, not the client's.
 
+## Gabby's mods: who does what (the same in every repo)
+
+One job per mod, decided 2026-10-15, so nothing is done twice and each repo tells the same story:
+
+- **Cozy Core** (cozy-core): the builder rules, each an ordinary game rule: builds stay built (mob
+  explosions, endermen, fire), no phantoms, keep your hotbar on death, the Hearth Lantern, cheap
+  wood in the stonecutter, re-dyeing and builder trades. Fabric and NeoForge jars, plus a plain
+  data pack of the recipes.
+- **Espresso Flavoured Core** (espresso-flavoured): the café: coffee you grow and brew, mugs,
+  baristas, Bean Coins, the café charms, and Drowsy (coffee's reason to exist). Longer days stay a
+  Core setting for now. The survival rules Cozy Core now covers leave Core in 0.4.0 (its PLAN-0.4.0.md).
+- **Spawn Gazebo** (spawn-gazebo): the gazebo at the world spawn and its starter chest.
+- **Nightfall Clock** (nightfall-clock): the clock above the hotbar and the dusk warning.
+- **Pocket List** (pocket-list): the gathering checklist.
+- **Espresso Flavoured** (espresso-flavoured-pack): the modpack that puts them together. Since
+  2026-10-14 it carries Cozy Core, Spawn Gazebo, Nightfall Clock and Pocket List, not Espresso
+  Flavoured Core.
+
+A new feature goes in the mod whose job it is. If none fits, ask Gabby before adding it anywhere.
+
 ## Working on Gabby's mods (the same in every repo)
 
 Gabby makes these mods with help from Claude. Several Claude sessions work on them: one on her
