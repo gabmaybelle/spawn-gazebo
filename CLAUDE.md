@@ -75,7 +75,7 @@ branch, then push it. A cherry-pick that conflicts stops the work until it is re
 A worldgen or balance change is tested on every terrain in the branch's matrix before it goes
 to any other branch. (Learned on Beyond the Dragon, 2026-10-14, when scripted chains committed
 a conflicted cherry-pick, put one branch's files on another, and sent an untested ore change to
-all three branches.) For a Gradle game test use the toolkit's watcher (`~/.claude/CLAUDE.md`),
+all three branches.) For a Gradle game test use a game watcher that reports a verdict (in the world, error screen, crashed or hung),
 not a wait loop.
 
 **Commits.**
