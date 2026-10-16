@@ -1,6 +1,6 @@
 # Spawn Gazebo
 
-A small Fabric mod for Minecraft 26.3 (mod ID `spawn_gazebo`): new worlds start in a round stone
+A small Fabric and NeoForge mod for Minecraft 26.3 (mod ID `spawn_gazebo`): new worlds start in a round stone
 gazebo with a copper dome, built once at the world spawn, with an optional starter chest and
 protection round it. See README.md for what players get.
 
@@ -9,27 +9,39 @@ it first, and add this session's row before ending.
 
 ## Layout
 
-- `src/main/java/com/gabbymaybelle/spawngazebo/`: `SpawnGazebo.java` (choosing the wood and
+- `common/src/main/java/com/gabbymaybelle/spawngazebo/`: `SpawnGazebo.java` (choosing the wood and
   palette, clearing the ground, placing the template, the chest, cooling nearby lava),
-  `GazeboGuard.java` (the protected area), `Config.java`, `client/` (settings screen, Mod Menu)
-  and `mixin/` (explosions, fire, pistons, buckets, block items).
-- `src/gametest/`: the client game test (`SpawnGazeboClientTest`).
+  `GazeboGuard.java` (the protected area), `Config.java`, `client/` (settings screen) and `mixin/`
+  (explosions, pistons, buckets, block items). `Platform` is what the loader answers (config folder,
+  installed mods, other mods' starter kits, what the world remembers, sending the gazebo's box to a
+  player); `SpawnGazeboMod.init()` and plain handlers in `SpawnGazebo` and `GazeboGuard` are what each
+  loader's events call. The built-in data pack is `resourcepacks/spawn_gazebo_data`.
+- `fabric/`: `SpawnGazeboFabric` (Fabric API events, attachments, networking, built-in pack),
+  `SpawnGazeboFabricClient`, `ModMenuIntegration`, `fabric.mod.json`, its own `FireBlockMixin` and
+  `spawn_gazebo.fire.mixins.json`, and `src/gametest/` (the client game test, `SpawnGazeboClientTest`).
+- `neoforge/`: `SpawnGazeboNeoForge` (events, attachments, an optional payload, the data pack through
+  `AddPackFindersEvent`), `SpawnGazeboNeoForgeClient` (the Mods screen's Config button), its own
+  `FireBlockMixin` and `spawn_gazebo.fire.mixins.json`, `neoforge.mods.toml`, and `src/clienttest/` (the
+  NeoForge in-game test; part of the mod only in dev runs, never in the jar).
 - `tools/`: `generate-spawn.js` writes the gazebo templates, `generate-data.js` the data pack,
   `render-gazebo.js` the icon and the README picture.
 
 ## Build and test
 
-- `./gradlew build`: jar in `build/libs/`.
-- `./gradlew runClientGameTest`: the settings file (typos, unknown settings, safe saving), the settings screen (title screen, in a world, greyed out on a
+- `./gradlew build`: jars in `fabric/build/libs/` and `neoforge/build/libs/`.
+- `./gradlew :neoforge:runClientTest` (NeoForge): the settings file, a new world's gazebo (kit claimed, spawn radius 0), that the world remembers it and where, that the player's game is told the box, and protection incl. the right-click refusal. A failed check crashes the game with a report in `neoforge/build/run/clientTest/crash-reports/`; a watchdog stops a hang after 10 minutes.
+- `./gradlew :fabric:runClientGameTest` (Fabric): the settings file (typos, unknown settings, safe saving), the settings screen (title screen, in a world, greyed out on a
   server), saving, a new world's gazebo, and protection inside and just outside the radius.
 
 ## Gotchas
 
 - **Espresso Flavoured Core bundles this mod** (github.com/gabmaybelle/espresso-flavoured,
   `libs/spawn-gazebo-<version>.jar`, jar-in-jar) and fills the chest with its own kit through
-  fabric.mod.json `custom.spawn_gazebo.starter_kit` (see `Config.starterKitTable`). After a
+  fabric.mod.json `custom.spawn_gazebo.starter_kit` (see `Config.starterKitTable`; on NeoForge a mod says it in neoforge.mods.toml `[modproperties.<its id>]` as `"spawn_gazebo:starter_kit" = "<loot table id>"`). After a
   release here, copy the jar into Espresso's libs/ and bump the version there. Espresso's Seat
   sits players on the benches, which is why the guard lets wooden stairs through with a tool in hand.
+- **Fabric worlds keep their gazebo.** Fabric stores whether a world was checked and where the gazebo is as attachments `spawn_gazebo` and `spawn_gazebo_box`; they must keep those ids, or an existing world would be given a second gazebo or lose its protection.
+- **One mixin differs by loader.** NeoForge's patched `FireBlock.checkBurnOut` takes an extra `Direction`, so `FireBlockMixin` has a copy in `fabric/` and one in `neoforge/` (each with its own mixin config). The game crashes on launch if a mixin doesn't match, and the NeoForge test is what caught this. Check the others when a Minecraft version changes.
 - **The structure files are generated.** Edit `tools/generate-spawn.js` and re-run
   `node tools/generate-data.js`; don't edit the `.nbt` files.
 - **Lootr:** with Lootr installed the chest becomes a Lootr chest. Lootr 1.25.42 converts it by

@@ -1,0 +1,43 @@
+{
+	"schemaVersion": 1,
+	"id": "spawn_gazebo",
+	"version": "${version}",
+	"name": "Spawn Gazebo",
+	"description": "New worlds start in a little round stone gazebo: pillars of whatever wood grows nearby, a green copper dome, lanterns, benches, a spore blossom over a glowstone floor, and a starter chest. It can't be broken outside creative unless you say so.",
+	"authors": [
+		"Gabby"
+	],
+	"contact": {
+		"homepage": "https://github.com/gabmaybelle/spawn-gazebo",
+		"sources": "https://github.com/gabmaybelle/spawn-gazebo",
+		"issues": "https://github.com/gabmaybelle/spawn-gazebo/issues"
+	},
+	"license": "MIT",
+	"icon": "assets/spawn_gazebo/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.gabbymaybelle.spawngazebo.fabric.SpawnGazeboFabric"
+		],
+		"client": [
+			"com.gabbymaybelle.spawngazebo.fabric.SpawnGazeboFabricClient"
+		],
+		"modmenu": [
+			"com.gabbymaybelle.spawngazebo.fabric.ModMenuIntegration"
+		]
+	},
+	"mixins": [
+		"spawn_gazebo.mixins.json",
+		"spawn_gazebo.fire.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.19.5",
+		"fabric-api": "*",
+		"minecraft": "~26.3",
+		"java": ">=25"
+	},
+	"suggests": {
+		"modmenu": "*",
+		"lootr": "*"
+	}
+}

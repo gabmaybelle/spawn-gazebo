@@ -1,0 +1,21 @@
+// Loader-neutral code and data: the gazebo, the guard, the settings and their screen, the mixins and
+// the built-in data pack. This project is compiled on its own so a Fabric or NeoForge import can't
+// sneak in: only Minecraft, Mixin and the JDK are on the classpath. Nothing here ships as a jar;
+// `fabric` and `neoforge` compile these sources into theirs.
+plugins {
+	id 'net.fabricmc.fabric-loom' version "${loom_version}"
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	// Only for the Mixin annotations and the launch-side classes they need. No Fabric API here.
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+}
+
+loom {
+	mods {
+		"spawn_gazebo" {
+			sourceSet sourceSets.main
+		}
+	}
+}

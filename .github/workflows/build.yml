@@ -1,6 +1,6 @@
-# Builds the mod on every push and pull request, then runs the in-game test (src/gametest) on a
+# Builds the mod on every push and pull request, then runs the in-game tests (fabric/src/gametest and neoforge/src/clienttest) on a
 # virtual display, so a broken build or a crash in game shows up straight away. The test also runs
-# with each optional mod the mod works with installed (Lootr). The built jars
+# with each optional mod the mod works with installed (Lootr). The Fabric and NeoForge jars
 # are attached to each run under "Artifacts", and the game test's screenshots alongside them.
 
 name: build
@@ -47,17 +47,30 @@ jobs:
         env:
           SDL_VIDEO_FORCE_EGL: '1'
         timeout-minutes: 15
-        run: xvfb-run -a ./gradlew runClientGameTest ${{ matrix.test_args }}
+        run: xvfb-run -a ./gradlew :fabric:runClientGameTest ${{ matrix.test_args }}
+      - name: run NeoForge game test
+        # The NeoForge jar's checks (neoforge/src/clienttest). A failed check crashes the game, which
+        # fails this step; the crash report is uploaded with the screenshots.
+        if: always() && matrix.variant == 'on its own'
+        env:
+          SDL_VIDEO_FORCE_EGL: '1'
+        timeout-minutes: 12
+        run: xvfb-run -a ./gradlew :neoforge:runClientTest ${{ matrix.test_args }}
       - name: capture game test screenshots
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: Game test screenshots (${{ matrix.variant }})
-          path: build/run/clientGameTest/screenshots/
+          path: |
+            fabric/build/run/clientGameTest/screenshots/
+            neoforge/build/run/clientTest/screenshots/
+            neoforge/build/run/clientTest/crash-reports/
           if-no-files-found: ignore
       - name: capture build artifacts
         if: matrix.variant == 'on its own'
         uses: actions/upload-artifact@v7
         with:
           name: Artifacts
-          path: build/libs/
+          path: |
+            fabric/build/libs/
+            neoforge/build/libs/

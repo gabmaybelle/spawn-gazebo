@@ -1,0 +1,40 @@
+modLoader = "javafml"
+loaderVersion = "[1,)"
+license = "MIT"
+issueTrackerURL = "https://github.com/gabmaybelle/spawn-gazebo/issues"
+
+[[mods]]
+modId = "spawn_gazebo"
+version = "${version}"
+displayName = "Spawn Gazebo"
+authors = "Gabby"
+displayURL = "https://github.com/gabmaybelle/spawn-gazebo"
+logoFile = "assets/spawn_gazebo/icon.png"
+description = '''New worlds start in a little round stone gazebo: pillars of whatever wood grows nearby, a green copper dome, lanterns, benches, a spore blossom over a glowstone floor, and a starter chest. It can't be broken outside creative unless you say so.'''
+
+[[mixins]]
+config = "spawn_gazebo.mixins.json"
+
+[[mixins]]
+config = "spawn_gazebo.fire.mixins.json"
+
+[[dependencies.spawn_gazebo]]
+modId = "neoforge"
+type = "required"
+versionRange = "[26.3,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.spawn_gazebo]]
+modId = "minecraft"
+type = "required"
+versionRange = "[26.3,26.4)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.spawn_gazebo]]
+modId = "lootr"
+type = "optional"
+versionRange = "*"
+ordering = "NONE"
+side = "BOTH"
