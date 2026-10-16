@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Spawn Gazebo now comes as a NeoForge mod as well as a Fabric one, for Minecraft 26.3. It builds the same gazebo and keeps it the same way. On NeoForge, the settings are on the Mods screen's Config button. Worlds you already have on Fabric keep their gazebo.
+
 ## 1.1.1
 
 - A `chestLoot` that isn't a loot table id now falls back to the pack's own starter kit (Espresso

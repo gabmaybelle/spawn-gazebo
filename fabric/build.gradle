@@ -1,0 +1,63 @@
+plugins {
+	id 'net.fabricmc.fabric-loom' version "${loom_version}"
+}
+
+repositories {
+	maven { url = 'https://maven.terraformersmc.com/releases/' }
+}
+
+// The common sources and the built-in data pack are compiled straight into this jar (no common jar
+// to bundle), so the Fabric mod is one file.
+sourceSets.main {
+	java.srcDir project(':common').file('src/main/java')
+	resources.srcDir project(':common').file('src/main/resources')
+}
+
+loom {
+	mods {
+		"spawn_gazebo" {
+			sourceSet sourceSets.main
+		}
+	}
+}
+
+dependencies {
+	// Versions are in gradle.properties.
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	// Mod Menu: only for the Config button; not bundled or required.
+	compileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
+
+	// `./gradlew :fabric:runClientGameTest -PtestLootr` runs the game test with Lootr installed
+	// (Modrinth version id gVwn7m2v: Lootr 1.25.42.124 for Fabric 26.3). Not bundled or required.
+	if (project.hasProperty("testLootr")) {
+		runtimeOnly "maven.modrinth:lootr:gVwn7m2v"
+	}
+}
+
+processResources {
+	def version = project.version
+	inputs.property "version", version
+
+	filesMatching("fabric.mod.json") {
+		expand "version": version
+	}
+}
+
+// Client game tests: `./gradlew :fabric:runClientGameTest` starts a real game, opens the settings
+// screen (from the title screen, in a world and on a server) and checks a new world gets its gazebo.
+// The tests live in src/gametest; nothing there ships in the jar.
+fabricApi {
+	configureTests {
+		createSourceSet = true
+		modId = "spawn_gazebo_gametest"
+		enableGameTests = false
+		enableClientGameTests = true
+		eula = true
+	}
+}
+
+// spawn-gazebo-fabric-<version>.jar, the name players download.
+tasks.named('jar') { archiveBaseName = "${rootProject.name}-fabric" }
+tasks.named('sourcesJar') { archiveBaseName = "${rootProject.name}-fabric" }

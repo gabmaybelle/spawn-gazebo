@@ -1,81 +1,40 @@
-plugins {
-	id 'net.fabricmc.fabric-loom' version "${loom_version}"
-}
+// Shared settings for the three subprojects. Each subproject's own build.gradle says how it
+// compiles; versions live in gradle.properties.
+subprojects {
+	apply plugin: 'java'
 
-repositories {
-	maven { url = 'https://maven.terraformersmc.com/releases/' }
-	exclusiveContent {
-		forRepository {
-			maven { url = 'https://api.modrinth.com/maven' }
-		}
-		filter {
-			includeGroup 'maven.modrinth'
-		}
-	}
-}
+	group = rootProject.group
+	version = rootProject.version
 
-loom {
-	mods {
-		"spawn_gazebo" {
-			sourceSet sourceSets.main
+	repositories {
+		mavenCentral()
+		// Optional mods for the tests (Lootr), from Modrinth; never bundled.
+		exclusiveContent {
+			forRepository {
+				maven { url = 'https://api.modrinth.com/maven' }
+			}
+			filter {
+				includeGroup 'maven.modrinth'
+			}
 		}
 	}
-}
 
-dependencies {
-	// Versions are in gradle.properties.
-	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
-	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
-	// Mod Menu: only for the Config button; not bundled or required.
-	compileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
-
-	// `./gradlew runClientGameTest -PtestLootr` runs the game test with Lootr installed
-	// (Modrinth version id gVwn7m2v: Lootr 1.25.42.124 for Fabric 26.3). Not bundled or required.
-	if (project.hasProperty("testLootr")) {
-		runtimeOnly "maven.modrinth:lootr:gVwn7m2v"
+	tasks.withType(JavaCompile).configureEach {
+		it.options.release = 25
+		it.options.encoding = 'UTF-8'
 	}
-}
 
-processResources {
-	def version = project.version
-	inputs.property "version", version
-
-	filesMatching("fabric.mod.json") {
-		expand "version": version
+	java {
+		withSourcesJar()
+		sourceCompatibility = JavaVersion.VERSION_25
+		targetCompatibility = JavaVersion.VERSION_25
 	}
-}
 
-tasks.withType(JavaCompile).configureEach {
-	it.options.release = 25
-}
-
-java {
-	// Also builds a -sources jar alongside the mod.
-	withSourcesJar()
-
-	sourceCompatibility = JavaVersion.VERSION_25
-	targetCompatibility = JavaVersion.VERSION_25
-}
-
-jar {
-	def projectName = project.name
-	inputs.property "projectName", projectName
-
-	from("LICENSE") {
-		rename { "${it}_$projectName"}
-	}
-}
-
-// Client game tests: `./gradlew runClientGameTest` starts a real game, opens the settings screen
-// (from the title screen, in a world and on a server) and checks a new world gets its gazebo.
-// The tests live in src/gametest; nothing there ships in the jar.
-fabricApi {
-	configureTests {
-		createSourceSet = true
-		modId = "spawn_gazebo_gametest"
-		enableGameTests = false
-		enableClientGameTests = true
-		eula = true
+	// Captured outside the closure: the configuration cache can't serialise `rootProject` itself.
+	def licenseSuffix = "_" + rootProject.name
+	jar {
+		from(rootProject.file('LICENSE')) {
+			rename { it + licenseSuffix }
+		}
 	}
 }
