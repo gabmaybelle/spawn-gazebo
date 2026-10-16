@@ -1,8 +1,9 @@
 # Changelog
 
-## Unreleased
+## 1.2.0
 
 - Spawn Gazebo now comes as a NeoForge mod as well as a Fabric one, for Minecraft 26.3. It builds the same gazebo and keeps it the same way. On NeoForge, the settings are on the Mods screen's Config button. Worlds you already have on Fabric keep their gazebo.
+- The Fabric file is now named `spawn-gazebo-fabric-1.2.0.jar`.
 
 ## 1.1.1
 
