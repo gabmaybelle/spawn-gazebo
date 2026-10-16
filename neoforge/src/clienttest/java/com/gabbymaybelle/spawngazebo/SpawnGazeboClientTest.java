@@ -13,7 +13,9 @@ import java.nio.file.Path;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -52,7 +54,9 @@ final class SpawnGazeboClientTest {
 			middle = level.getRespawnData().pos();
 			CompoundTag spawn = server.getCommandStorage().get(Identifier.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "spawn"));
 			expect(out, spawn.getBooleanOr("chest", false), "a new world gets the gazebo, with its starter chest");
-			if (!ModList.get().isLoaded("lootr")) {
+			if (ModList.get().isLoaded("lootr")) {
+				lootrChest(server, level, spawn, out);
+			} else {
 				expect(out, spawn.getBooleanOr("claimed", false), "the first player to join claims the chest's kit");
 			}
 			int radius = level.getGameRules().get(GameRules.RESPAWN_RADIUS);
@@ -65,6 +69,27 @@ final class SpawnGazeboClientTest {
 		waitUntil("the player's game knowing where the gazebo is", 200, mc -> middle != null && GazeboGuard.guards(mc.level, middle));
 		screenshot();
 		protection();
+	}
+
+	/**
+	 * With Lootr, the starter chest becomes a Lootr chest (everyone gets their own copy), so the
+	 * kit isn't handed out on joining and the chest still rolls the starter kit.
+	 */
+	private static void lootrChest(MinecraftServer server, ServerLevel level, CompoundTag spawn, StringBuilder out) {
+		if (!spawn.getBooleanOr("lootr", false)) {
+			out.append("\n  the gazebo noted that Lootr is installed");
+			return;
+		}
+		for (BlockPos pos : BlockPos.betweenClosed(middle.offset(-8, -3, -8), middle.offset(8, 3, 8))) {
+			Identifier id = BuiltInRegistries.BLOCK.getKey(level.getBlockState(pos).getBlock());
+			if (id.getNamespace().equals("lootr") && id.getPath().contains("chest")) {
+				if (server.getPlayerList().getPlayers().getFirst().getInventory().contains(new ItemStack(Items.TORCH))) {
+					out.append("\n  with Lootr the kit isn't handed out on joining");
+				}
+				return;
+			}
+		}
+		out.append("\n  the starter chest became a Lootr chest");
 	}
 
 	/**

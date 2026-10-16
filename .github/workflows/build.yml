@@ -51,7 +51,7 @@ jobs:
       - name: run NeoForge game test
         # The NeoForge jar's checks (neoforge/src/clienttest). A failed check crashes the game, which
         # fails this step; the crash report is uploaded with the screenshots.
-        if: always() && matrix.variant == 'on its own'
+        if: always()
         env:
           SDL_VIDEO_FORCE_EGL: '1'
         timeout-minutes: 12
