@@ -32,6 +32,7 @@ it first, and add this session's row before ending.
 - `./gradlew :neoforge:runClientTest` (NeoForge): the settings file, a new world's gazebo (kit claimed, spawn radius 0), that the world remembers it and where, that the player's game is told the box, and protection incl. the right-click refusal. A failed check crashes the game with a report in `neoforge/build/run/clientTest/crash-reports/`; a watchdog stops a hang after 10 minutes.
 - `./gradlew :fabric:runClientGameTest` (Fabric): the settings file (typos, unknown settings, safe saving), the settings screen (title screen, in a world, greyed out on a
   server), saving, a new world's gazebo, and protection inside and just outside the radius.
+- `-PtestLootr` works on both tasks (`:fabric:runClientGameTest`, `:neoforge:runClientTest`): Lootr is installed (NeoForge: Modrinth id `PdFGq3vT`, Fabric `gVwn7m2v`) and the test checks the starter chest became a Lootr chest and the kit isn't handed out on joining. CI runs both with and without it.
 
 ## Gotchas
 

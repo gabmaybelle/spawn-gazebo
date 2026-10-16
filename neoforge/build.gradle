@@ -45,6 +45,14 @@ neoForge {
 	}
 }
 
+dependencies {
+	// `./gradlew :neoforge:runClientTest -PtestLootr` runs the test with Lootr installed
+	// (Modrinth version id PdFGq3vT: Lootr 1.25.42.124 for NeoForge 26.3). Not bundled or required.
+	if (project.hasProperty("testLootr")) {
+		runtimeOnly "maven.modrinth:lootr:PdFGq3vT"
+	}
+}
+
 processResources {
 	def version = project.version
 	inputs.property "version", version
