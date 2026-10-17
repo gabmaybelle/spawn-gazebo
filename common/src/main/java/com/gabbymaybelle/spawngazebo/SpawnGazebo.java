@@ -48,7 +48,8 @@ import net.minecraft.world.level.storage.LevelData;
  * file per wood and per palette: the wood is whatever grows around spawn, and deserts and
  * badlands get sandstone. The ground inside the footprint is cleared and anything hanging over a
  * drop gets a stone foundation under it. The spawn point moves to the middle of the gazebo, so
- * new players wake up under the spore blossom.
+ * new players wake up under the spore blossom. An operator can build one in a world that already
+ * exists with {@code /spawngazebo build} ({@link GazeboCommand}).
  */
 public final class SpawnGazebo {
 	/** The template is 15 wide and 15 tall, centred on (7, y, 7), with its entrance facing south. */
@@ -88,15 +89,20 @@ public final class SpawnGazebo {
 			return;
 		}
 		try {
-			place(level);
+			BlockPos spawn = level.getRespawnData().pos();
+			build(level, spawn.getX(), spawn.getZ(), false);
 		} catch (RuntimeException e) {
 			SpawnGazeboMod.LOGGER.error("Spawn Gazebo: couldn't build the gazebo", e);
 		}
 	}
 
-	private static void place(ServerLevel level) {
-		BlockPos spawn = level.getRespawnData().pos();
-		int cx = spawn.getX(), cz = spawn.getZ();
+	/**
+	 * Builds the gazebo centred on this column of the overworld, then moves the world spawn and the
+	 * protection to it (an older gazebo stays standing, unprotected). {@code claimed}: the starter
+	 * chest is for the players already here, so each newcomer is handed their own roll of the kit.
+	 * Returns where players now wake up, or null when there's no template to build from.
+	 */
+	static BlockPos build(ServerLevel level, int cx, int cz, boolean claimed) {
 		// The footprint and the tree survey can reach past the spawn chunks; loading is synchronous here.
 		for (int dx = -3; dx <= 3; dx++) {
 			for (int dz = -3; dz <= 3; dz++) {
@@ -104,14 +110,14 @@ public final class SpawnGazebo {
 			}
 		}
 		int ground = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, cx, cz) - 1;
-		Holder<Biome> biome = level.getBiome(spawn);
+		Holder<Biome> biome = level.getBiome(new BlockPos(cx, ground, cz));
 		String palette = dry(biome) ? "sand" : "stone";
 		String wood = wood(level, cx, cz, biome);
 		Identifier id = Identifier.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "spawn/gazebo_" + palette + "_" + wood);
 		Optional<StructureTemplate> template = level.getStructureTemplateManager().get(id);
 		if (template.isEmpty()) {
 			SpawnGazeboMod.LOGGER.warn("Spawn Gazebo: no gazebo template {}", id);
-			return;
+			return null;
 		}
 		BlockPos origin = new BlockPos(cx - HALF, ground, cz - HALF);
 		Rotation rotation = Rotation.getRandom(level.getRandom());
@@ -131,8 +137,9 @@ public final class SpawnGazebo {
 		level.setRespawnData(LevelData.RespawnData.of(Level.OVERWORLD, middle, yaw(rotation), 0f));
 		// Everyone starts in the gazebo itself rather than somewhere within ten blocks of it.
 		level.getGameRules().set(GameRules.RESPAWN_RADIUS, 0, level.getServer());
-		kitChest(level, origin, rotation);
+		kitChest(level, origin, rotation, claimed);
 		SpawnGazeboMod.LOGGER.info("Spawn Gazebo: built the gazebo ({} {}) at {}", palette, wood, middle);
+		return middle;
 	}
 
 	/**
@@ -141,7 +148,7 @@ public final class SpawnGazebo {
 	 * whether there is a chest, which loot table it rolls, and whether Lootr is here to share it
 	 * out. With the chest switched off, the railing runs across where it would be.
 	 */
-	private static void kitChest(ServerLevel level, BlockPos origin, Rotation rotation) {
+	private static void kitChest(ServerLevel level, BlockPos origin, Rotation rotation, boolean claimed) {
 		BlockPos pivot = new BlockPos(HALF, 0, HALF);
 		BlockPos chest = origin.offset(StructureTemplate.transform(CHEST, Mirror.NONE, rotation, pivot));
 		if (!(level.getBlockState(chest).getBlock() instanceof ChestBlock)) {
@@ -174,6 +181,10 @@ public final class SpawnGazebo {
 		spawn.putString("table", table.toString());
 		if (lootr) {
 			spawn.putBoolean("lootr", true);
+		}
+		if (claimed) {
+			// Built into a world people already play in: the chest is theirs, and newcomers get their own roll.
+			spawn.putBoolean("claimed", true);
 		}
 		level.getServer().getCommandStorage().set(Identifier.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "spawn"), spawn);
 	}
