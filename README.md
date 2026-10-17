@@ -22,7 +22,7 @@ In `config/spawn_gazebo.properties`, or in game through [Mod Menu](https://modri
 
 | Setting | Default | What it does |
 |---|---|---|
-| `spawnGazebo` | on | Build the gazebo in new worlds. Only matters when a world is created. |
+| `spawnGazebo` | on | Build the gazebo in new worlds. Only matters when a world is created (`/spawngazebo build` works either way). |
 | `starterChest` | on | Put the starter chest in the gazebo. Off, the railing runs across its spot and no kit is handed out. Only matters when a world is created. |
 | `chestLoot` | `starter_kit` | What the chest holds: `starter_kit`, `bonus_chest` (vanilla's bonus chest loot), or any loot table id, such as `minecraft:chests/village/village_plains_house`. Only matters when a world is created. A mod that includes Spawn Gazebo can bring its own starter kit (Espresso Flavoured Core does); `starter_kit` then means that one. |
 | `protectGazebo` | on | Keep the gazebo from being changed outside creative. Switch off to remodel it. |
@@ -32,7 +32,11 @@ On a server, the server's settings file decides; players' own settings are greye
 
 ## Worlds
 
-Only brand-new worlds get the gazebo. Worlds from before the mod keep their spawn as it is. Removing the mod leaves the gazebo standing as ordinary blocks.
+Brand-new worlds get the gazebo by themselves. Worlds from before the mod keep their spawn as it is, until an operator asks for one:
+
+- Stand where you want the gazebo and type `/spawngazebo build`. It tells you what will happen: trees and blocks in a 15 by 15 area are cleared and built over, and the world spawn and the protection move to the new gazebo.
+- Type `/spawngazebo build confirm` within 30 seconds to build it. It's made of whatever wood grows nearby (sandstone in deserts), with the starter chest if that setting is on. Players who join after that are each handed their own roll of the starter kit.
+- A world has one protected gazebo. Building another leaves the old one standing as ordinary blocks. Removing the mod leaves the gazebo standing as ordinary blocks.
 
 ## On 1.21.1
 

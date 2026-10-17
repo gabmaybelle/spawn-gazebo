@@ -1,5 +1,6 @@
 package com.gabbymaybelle.spawngazebo.fabric;
 
+import com.gabbymaybelle.spawngazebo.GazeboCommand;
 import com.gabbymaybelle.spawngazebo.GazeboGuard;
 import com.gabbymaybelle.spawngazebo.Platform;
 import com.gabbymaybelle.spawngazebo.SpawnGazebo;
@@ -11,6 +12,7 @@ import java.util.Map;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
@@ -106,7 +108,11 @@ public class SpawnGazeboFabric implements ModInitializer {
 			SpawnGazebo.onServerStarted(server);
 			GazeboGuard.onServerStarted(server);
 		});
-		ServerLifecycleEvents.SERVER_STOPPED.register(server -> GazeboGuard.onServerStopped());
+		ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
+			GazeboGuard.onServerStopped();
+			GazeboCommand.onServerStopped();
+		});
+		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> GazeboCommand.register(dispatcher));
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> GazeboGuard.onPlayerJoin(handler.player));
 		PlayerBlockBreakEvents.BEFORE.register((level, player, pos, state, blockEntity) -> GazeboGuard.allowBreak(level, player, pos, state));
 		UseBlockCallback.EVENT.register(GazeboGuard::onUseBlock);
