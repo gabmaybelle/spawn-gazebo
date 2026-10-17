@@ -1,5 +1,6 @@
 package com.gabbymaybelle.spawngazebo.neoforge;
 
+import com.gabbymaybelle.spawngazebo.GazeboCommand;
 import com.gabbymaybelle.spawngazebo.GazeboGuard;
 import com.gabbymaybelle.spawngazebo.Platform;
 import com.gabbymaybelle.spawngazebo.SpawnGazebo;
@@ -28,6 +29,7 @@ import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddPackFindersEvent;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
@@ -116,6 +118,7 @@ public class SpawnGazeboNeoForge {
 		modBus.addListener(SpawnGazeboNeoForge::packs);
 		NeoForge.EVENT_BUS.addListener(SpawnGazeboNeoForge::serverStarted);
 		NeoForge.EVENT_BUS.addListener(SpawnGazeboNeoForge::serverStopped);
+		NeoForge.EVENT_BUS.addListener((RegisterCommandsEvent event) -> GazeboCommand.register(event.getDispatcher()));
 		NeoForge.EVENT_BUS.addListener(SpawnGazeboNeoForge::playerJoined);
 		NeoForge.EVENT_BUS.addListener(SpawnGazeboNeoForge::blockBreak);
 		NeoForge.EVENT_BUS.addListener(SpawnGazeboNeoForge::useBlock);
@@ -142,6 +145,7 @@ public class SpawnGazeboNeoForge {
 
 	private static void serverStopped(ServerStoppedEvent event) {
 		GazeboGuard.onServerStopped();
+		GazeboCommand.onServerStopped();
 	}
 
 	private static void playerJoined(PlayerEvent.PlayerLoggedInEvent event) {

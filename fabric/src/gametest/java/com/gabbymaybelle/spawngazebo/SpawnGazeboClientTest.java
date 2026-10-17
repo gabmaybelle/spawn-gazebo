@@ -2,6 +2,7 @@ package com.gabbymaybelle.spawngazebo;
 
 import com.gabbymaybelle.spawngazebo.client.SettingsScreen;
 import com.mojang.blaze3d.platform.InputConstants;
+import com.mojang.brigadier.tree.CommandNode;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,6 +14,7 @@ import com.gabbymaybelle.spawngazebo.harness.TestSingleplayerContext;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.client.gui.components.events.ContainerEventHandler;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.TitleScreen;
@@ -32,6 +34,7 @@ import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
@@ -66,6 +69,8 @@ public class SpawnGazeboClientTest implements ClientGameTest {
 			check(radius == 0, "building the gazebo sets the spawn radius to 0 (got " + radius + ")");
 			ctx.takeScreenshot("spawn_gazebo_new_world");
 			protection(world.getServer());
+			buildCommand(world.getServer());
+			ctx.takeScreenshot("spawn_gazebo_built_by_command");
 			inWorldSettings(ctx);
 		}
 		String address = System.getProperty("spawn_gazebo.gametest.server");
@@ -205,6 +210,44 @@ public class SpawnGazeboClientTest implements ClientGameTest {
 			return failures.toString();
 		});
 		check(result.isEmpty(), "protection:" + result);
+	}
+
+	/**
+	 * /spawngazebo build in a world that already has its gazebo: only operators, nothing until the
+	 * confirm, then a second gazebo where it was asked for, with the spawn and the protection moved
+	 * to it and its chest counted as claimed.
+	 */
+	private static void buildCommand(TestServerContext server) {
+		String result = server.computeOnServer(s -> {
+			ServerLevel level = s.overworld();
+			StringBuilder failures = new StringBuilder();
+			BlockPos oldMiddle = level.getSharedSpawnPos();
+			// 48 blocks east, well outside the first gazebo's protection.
+			BlockPos target = oldMiddle.offset(48, 0, 0);
+			CommandSourceStack op = s.createCommandSourceStack().withSuppressedOutput().withPosition(Vec3.atCenterOf(target));
+			CommandSourceStack notOp = op.withPermission(0);
+			CommandNode<CommandSourceStack> node = s.getCommands().getDispatcher().getRoot().getChild("spawngazebo");
+			expect(failures, node != null && node.canUse(op), "operators can use /spawngazebo");
+			expect(failures, node != null && !node.canUse(notOp), "players who aren't operators can't use /spawngazebo");
+			expect(failures, GazeboCommand.confirm(op) == 0, "confirm does nothing before build has asked");
+			expect(failures, GazeboCommand.ask(op) == 1, "build asks first");
+			expect(failures, level.getSharedSpawnPos().equals(oldMiddle), "asking alone doesn't build anything or move the spawn");
+			expect(failures, GazeboCommand.confirm(op) == 1, "confirm builds the gazebo");
+			BlockPos newMiddle = level.getSharedSpawnPos();
+			expect(failures, newMiddle.getX() == target.getX() && newMiddle.getZ() == target.getZ(),
+					"the world spawn moves into the new gazebo (it's at " + newMiddle + ", asked for " + target + ")");
+			BoundingBox box = Platform.get().savedBox(level);
+			expect(failures, box != null && box.getCenter().getX() == target.getX() && box.getCenter().getZ() == target.getZ(),
+					"the world remembers the new gazebo's box (" + box + ")");
+			expect(failures, GazeboGuard.guards(level, newMiddle), "the new gazebo is protected");
+			expect(failures, !GazeboGuard.guards(level, oldMiddle), "the old gazebo is no longer protected");
+			CompoundTag spawn = s.getCommandStorage().get(ResourceLocation.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "spawn"));
+			expect(failures, spawn.getBoolean("chest") && spawn.getBoolean("claimed"),
+					"the new chest is for the players already here, so newcomers get their own kit (" + spawn + ")");
+			expect(failures, GazeboCommand.confirm(op) == 0, "a second confirm builds nothing more");
+			return failures.toString();
+		});
+		check(result.isEmpty(), "the build command:" + result);
 	}
 
 	/** Uses a shovel on the top of a block, as a right-click would; true if it did anything. */
