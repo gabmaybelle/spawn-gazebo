@@ -16,7 +16,7 @@ const args = process.argv.slice(2);
 const opt = (n, d) => { const i = args.indexOf('--' + n); return i >= 0 ? args[i + 1] : d; };
 const flag = (n) => args.includes('--' + n);
 const ROOT = path.join(__dirname, '..');
-const STRUCTURES = path.join(ROOT, 'src', 'main', 'resources', 'resourcepacks', 'spawn_gazebo_data', 'data', 'spawn_gazebo', 'structure', 'spawn');
+const STRUCTURES = path.join(ROOT, 'common', 'src', 'main', 'resources', 'resourcepacks', 'spawn_gazebo_data', 'data', 'spawn_gazebo', 'structure', 'spawn');
 const JAR = opt('jar', path.join(process.env.APPDATA || '', 'ModrinthApp', 'meta', 'versions', '26.3-0.19.5', '26.3-0.19.5.jar'));
 
 // ---- A reader for the entries of a zip (the client jar) ----
@@ -350,5 +350,5 @@ if (require.main !== module) {
 } else {
 	const size = +opt('size', 512);
 	const img = render(loadBlocks(opt('palette', 'stone'), opt('wood', 'oak')), size, Math.round(size * 0.04));
-	writePng(opt('out', path.join(ROOT, 'src', 'main', 'resources', 'assets', 'spawn_gazebo', 'icon.png')), size, size, img);
+	writePng(opt('out', path.join(ROOT, 'common', 'src', 'main', 'resources', 'assets', 'spawn_gazebo', 'icon.png')), size, size, img);
 }

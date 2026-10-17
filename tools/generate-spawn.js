@@ -8,7 +8,7 @@
 // Run by generate-data.js (which clears the pack first).
 const fs = require('fs'), path = require('path');
 const { Structure, stairs, fence } = require('./structure.js');
-const DATA = path.join(__dirname, '..', 'src', 'main', 'resources', 'resourcepacks', 'spawn_gazebo_data', 'data');
+const DATA = path.join(__dirname, '..', 'common', 'src', 'main', 'resources', 'resourcepacks', 'spawn_gazebo_data', 'data');
 const out = (rel, buf) => {
 	const f = path.join(DATA, ...rel.split('/'));
 	fs.mkdirSync(path.dirname(f), { recursive: true });

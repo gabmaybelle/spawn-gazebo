@@ -3,7 +3,7 @@
 // structures (generate-spawn.js). Re-run after editing:
 //   node tools/generate-data.js
 const fs = require('fs'), path = require('path');
-const ROOT = path.join(__dirname, '..', 'src', 'main', 'resources', 'resourcepacks', 'spawn_gazebo_data');
+const ROOT = path.join(__dirname, '..', 'common', 'src', 'main', 'resources', 'resourcepacks', 'spawn_gazebo_data');
 const out = (rel, obj) => {
 	const f = path.join(ROOT, ...rel.split('/'));
 	fs.mkdirSync(path.dirname(f), { recursive: true });
