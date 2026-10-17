@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **A gazebo in a world you already have.** An operator can stand where they want it and type `/spawngazebo build`. It says what it will do, and `/spawngazebo build confirm` within 30 seconds builds it there, in the local wood, with the starter chest if that setting is on. The world spawn and the protection move to the new gazebo; an older gazebo stays standing, unprotected. Players who join after that are each handed their own roll of the starter kit.
+
 ## 1.2.0
 
 - Spawn Gazebo now comes as a NeoForge mod as well as a Fabric one, for Minecraft 26.3. It builds the same gazebo and keeps it the same way. On NeoForge, the settings are on the Mods screen's Config button. Worlds you already have on Fabric keep their gazebo.

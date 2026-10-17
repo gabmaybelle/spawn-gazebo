@@ -14,5 +14,12 @@
   "spawn_gazebo.options.protectGazebo.tooltip": "The gazebo can only be changed in creative, and explosions, fire and pistons leave it alone. The chest, the benches and the pots still work. Turn off to remodel it.",
   "spawn_gazebo.options.protectedRadius": "Protected Radius",
   "spawn_gazebo.options.protectedRadius.tooltip": "How far from the middle of the gazebo the protection reaches, in blocks. 7 is the gazebo itself; more keeps the ground around it as it was too.",
-  "pack.spawn_gazebo.data": "Spawn Gazebo"
+  "pack.spawn_gazebo.data": "Spawn Gazebo",
+  "spawn_gazebo.command.overworld_only": "The gazebo can only be built in the Overworld.",
+  "spawn_gazebo.command.ask": "This builds a gazebo centred here (%s, %s): trees and blocks in a 15 by 15 area are cleared and built over, and the world spawn and the protection move to it.",
+  "spawn_gazebo.command.ask_old": "The old gazebo near %s, %s stays standing, but is no longer protected.",
+  "spawn_gazebo.command.ask_confirm": "Type /spawngazebo build confirm within 30 seconds to build it.",
+  "spawn_gazebo.command.nothing_to_confirm": "Nothing to confirm: run /spawngazebo build first, where you want the gazebo.",
+  "spawn_gazebo.command.failed": "Couldn't build the gazebo here; the server log says why.",
+  "spawn_gazebo.command.built": "Built the gazebo; the world spawn is now in it (%s, %s, %s)."
 }
