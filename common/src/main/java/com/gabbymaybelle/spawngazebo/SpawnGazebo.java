@@ -15,14 +15,14 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BiomeTags;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.TagKey;
-import net.minecraft.world.level.Level;
+import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -34,12 +34,10 @@ import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
-import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
-import net.minecraft.world.level.storage.LevelData;
 
 /**
  * The gazebo at the world spawn, built once when a world is created: a round
@@ -69,9 +67,9 @@ public final class SpawnGazebo {
 	private static final int MAX_LAVA = 8192;
 	/** The woods tools/generate-spawn.js writes a template for. */
 	private static final List<String> WOODS = List.of("oak", "spruce", "birch", "jungle", "acacia", "dark_oak",
-			"mangrove", "cherry", "pale_oak", "bamboo", "poplar");
-	private static final TagKey<Biome> C_IS_DESERT = TagKey.create(Registries.BIOME, Identifier.fromNamespaceAndPath("c", "is_desert"));
-	private static final TagKey<Biome> C_IS_BADLANDS = TagKey.create(Registries.BIOME, Identifier.fromNamespaceAndPath("c", "is_badlands"));
+			"mangrove", "cherry", "bamboo");
+	private static final TagKey<Biome> C_IS_DESERT = TagKey.create(Registries.BIOME, ResourceLocation.fromNamespaceAndPath("c", "is_desert"));
+	private static final TagKey<Biome> C_IS_BADLANDS = TagKey.create(Registries.BIOME, ResourceLocation.fromNamespaceAndPath("c", "is_badlands"));
 
 	private SpawnGazebo() {
 	}
@@ -95,7 +93,7 @@ public final class SpawnGazebo {
 	}
 
 	private static void place(ServerLevel level) {
-		BlockPos spawn = level.getRespawnData().pos();
+		BlockPos spawn = level.getSharedSpawnPos();
 		int cx = spawn.getX(), cz = spawn.getZ();
 		// The footprint and the tree survey can reach past the spawn chunks; loading is synchronous here.
 		for (int dx = -3; dx <= 3; dx++) {
@@ -107,8 +105,8 @@ public final class SpawnGazebo {
 		Holder<Biome> biome = level.getBiome(spawn);
 		String palette = dry(biome) ? "sand" : "stone";
 		String wood = wood(level, cx, cz, biome);
-		Identifier id = Identifier.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "spawn/gazebo_" + palette + "_" + wood);
-		Optional<StructureTemplate> template = level.getStructureTemplateManager().get(id);
+		ResourceLocation id = ResourceLocation.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "spawn/gazebo_" + palette + "_" + wood);
+		Optional<StructureTemplate> template = level.getStructureManager().get(id);
 		if (template.isEmpty()) {
 			SpawnGazeboMod.LOGGER.warn("Spawn Gazebo: no gazebo template {}", id);
 			return;
@@ -128,9 +126,9 @@ public final class SpawnGazebo {
 				origin.getX() + SIZE - 1, ground + GazeboGuard.HEIGHT, origin.getZ() + SIZE - 1));
 
 		BlockPos middle = new BlockPos(cx, ground + 3, cz);
-		level.setRespawnData(LevelData.RespawnData.of(Level.OVERWORLD, middle, yaw(rotation), 0f));
+		level.setDefaultSpawnPos(middle, yaw(rotation));
 		// Everyone starts in the gazebo itself rather than somewhere within ten blocks of it.
-		level.getGameRules().set(GameRules.RESPAWN_RADIUS, 0, level.getServer());
+		level.getGameRules().getRule(GameRules.RULE_SPAWN_RADIUS).set(0, level.getServer());
 		kitChest(level, origin, rotation);
 		SpawnGazeboMod.LOGGER.info("Spawn Gazebo: built the gazebo ({} {}) at {}", palette, wood, middle);
 	}
@@ -155,11 +153,11 @@ public final class SpawnGazebo {
 			BlockState rail = Block.updateFromNeighbourShapes(level.getBlockState(beside), level, chest);
 			level.setBlock(chest, rail, Block.UPDATE_ALL);
 			spawn.putBoolean("chest", false);
-			level.getServer().getCommandStorage().set(Identifier.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "spawn"), spawn);
+			level.getServer().getCommandStorage().set(ResourceLocation.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "spawn"), spawn);
 			return;
 		}
 		// The template's chest holds the starter kit; the setting can swap that for the bonus chest's loot or any other table.
-		Identifier table = Config.chestLootTable();
+		ResourceLocation table = Config.chestLootTable();
 		if (level.getBlockEntity(chest) instanceof RandomizableContainerBlockEntity container) {
 			container.setLootTable(ResourceKey.create(Registries.LOOT_TABLE, table));
 		}
@@ -175,7 +173,7 @@ public final class SpawnGazebo {
 		if (lootr) {
 			spawn.putBoolean("lootr", true);
 		}
-		level.getServer().getCommandStorage().set(Identifier.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "spawn"), spawn);
+		level.getServer().getCommandStorage().set(ResourceLocation.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "spawn"), spawn);
 	}
 
 	/**
@@ -343,7 +341,7 @@ public final class SpawnGazebo {
 		for (int x = cx - 32; x <= cx + 32; x += 2) {
 			for (int z = cz - 32; z <= cz + 32; z += 2) {
 				int top = level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) - 1;
-				for (int y = top; y > top - 24 && y > level.getMinY(); y--) {
+				for (int y = top; y > top - 24 && y > level.getMinBuildHeight(); y--) {
 					pos.set(x, y, z);
 					BlockState state = level.getBlockState(pos);
 					if (state.is(BlockTags.LOGS)) {
@@ -363,7 +361,7 @@ public final class SpawnGazebo {
 
 	/** "minecraft:stripped_dark_oak_log" is dark_oak; only woods with a template count. */
 	private static String woodOf(BlockState state) {
-		Identifier id = BuiltInRegistries.BLOCK.getKey(state.getBlock());
+		ResourceLocation id = BuiltInRegistries.BLOCK.getKey(state.getBlock());
 		if (!id.getNamespace().equals("minecraft")) {
 			return null;
 		}

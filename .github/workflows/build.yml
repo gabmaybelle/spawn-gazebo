@@ -1,4 +1,4 @@
-# Builds the mod on every push and pull request, then runs the in-game tests (fabric/src/gametest and neoforge/src/clienttest) on a
+# Builds the Fabric and NeoForge jars for Minecraft 1.21.1 on every push and pull request, then runs the in-game tests (fabric/src/gametest and neoforge/src/clienttest) on a
 # virtual display, so a broken build or a crash in game shows up straight away. The test also runs
 # with each optional mod the mod works with installed (Lootr). The Fabric and NeoForge jars
 # are attached to each run under "Artifacts", and the game test's screenshots alongside them.
@@ -22,7 +22,7 @@ jobs:
             test_args: ''
           - variant: 'with Lootr'
             test_args: '-PtestLootr'
-    name: build (${{ matrix.variant }})
+    name: build (Minecraft 1.21.1, ${{ matrix.variant }})
     steps:
       - name: checkout repository
         uses: actions/checkout@v6
@@ -32,6 +32,7 @@ jobs:
         uses: actions/setup-java@v5
         with:
           java-version: '25'
+          # The code is compiled for Java 21 (1.21.1's) by this newer JDK.
           distribution: 'microsoft'
       - name: setup gradle (with caching)
         uses: gradle/actions/setup-gradle@v6
@@ -39,21 +40,15 @@ jobs:
         run: chmod +x ./gradlew
       - name: build
         run: ./gradlew build
-      - name: install EGL
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq libegl1 libegl-mesa0
       - name: run game test
-        # 26.3 asks for an sRGB-capable window, which Xvfb's GLX can't give, so the game would
-        # hang at startup. Mesa's EGL can; SDL uses it with this set.
-        env:
-          SDL_VIDEO_FORCE_EGL: '1'
+        # The on-a-server part of this test needs a dedicated server running beside it, so it is
+        # skipped here (the log says so); everything else runs.
         timeout-minutes: 15
         run: xvfb-run -a ./gradlew :fabric:runClientGameTest ${{ matrix.test_args }}
       - name: run NeoForge game test
         # The NeoForge jar's checks (neoforge/src/clienttest). A failed check crashes the game, which
         # fails this step; the crash report is uploaded with the screenshots.
         if: always()
-        env:
-          SDL_VIDEO_FORCE_EGL: '1'
         timeout-minutes: 12
         run: xvfb-run -a ./gradlew :neoforge:runClientTest ${{ matrix.test_args }}
       - name: capture game test screenshots

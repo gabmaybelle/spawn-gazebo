@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.0+1.21.1
+
+Spawn Gazebo for Minecraft 1.21.1, on Fabric and NeoForge: the same mod as 1.2.0 for 26.3, with the gazebo built once in a new world from the wood and stone around it, the starter chest (the starter kit, the bonus chest's loot or any loot table, another mod's kit, Lootr), the protection and its radius, lava near it set to stone, and the settings file and screen (Mod Menu on Fabric, the Mods screen on NeoForge). What's different on 1.21.1, all down to the game itself:
+
+- The pillars and benches come in the woods 1.21.1 has. There is no pale oak or poplar gazebo.
+- The starter kit has no bundle, since bundles are still an experiment in 1.21.1.
+- In deserts and badlands the planting round the gazebo is dead bushes only: there are no cactus flowers in 1.21.1.
+
 ## 1.2.0
 
 - Spawn Gazebo now comes as a NeoForge mod as well as a Fabric one, for Minecraft 26.3. It builds the same gazebo and keeps it the same way. On NeoForge, the settings are on the Mods screen's Config button. Worlds you already have on Fabric keep their gazebo.

@@ -12,6 +12,7 @@ import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.Difficulty;
+import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.LevelSettings;
 import net.minecraft.world.level.WorldDataConfiguration;
@@ -115,7 +116,7 @@ final class ClientTest {
 
 	/** Saves a screenshot in the run's screenshots folder (named by the time it was taken). */
 	static void screenshot() {
-		run(mc -> Screenshot.grab(mc, false));
+		run(mc -> Screenshot.grab(mc.gameDirectory, mc.getMainRenderTarget(), message -> {}));
 		waitTicks(2);
 	}
 
@@ -133,14 +134,13 @@ final class ClientTest {
 	 */
 	static void createWorld(String baseName) {
 		String name = baseName + "-" + System.currentTimeMillis();
-		waitUntil("the title screen", 2400, mc -> mc.gui.overlay() == null && mc.gui.screen() != null);
+		waitUntil("the title screen", 2400, mc -> mc.getOverlay() == null && mc.screen != null);
 		run(mc -> mc.createWorldOpenFlows().createFreshLevel(name,
-				new LevelSettings(name, GameType.CREATIVE, new LevelSettings.DifficultySettings(Difficulty.PEACEFUL, false, false), true,
-						WorldDataConfiguration.DEFAULT),
+				new LevelSettings(name, GameType.CREATIVE, false, Difficulty.PEACEFUL, true, new GameRules(), WorldDataConfiguration.DEFAULT),
 				new WorldOptions(1L, false, false),
 				registries -> registries.lookupOrThrow(Registries.WORLD_PRESET).getOrThrow(WorldPresets.FLAT).value().createWorldDimensions(),
-				mc.gui.screen()));
-		waitUntil("the player in the new world", 2400, mc -> mc.player != null && mc.level != null && mc.gui.screen() == null);
+				mc.screen));
+		waitUntil("the player in the new world", 2400, mc -> mc.player != null && mc.level != null && mc.screen == null);
 		// Time for the chunks around the player to arrive and draw.
 		waitTicks(60);
 	}

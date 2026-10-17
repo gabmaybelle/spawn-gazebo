@@ -8,15 +8,16 @@
 // Run by generate-data.js (which clears the pack first).
 const fs = require('fs'), path = require('path');
 const { Structure, stairs, fence } = require('./structure.js');
-const DATA = path.join(__dirname, '..', 'src', 'main', 'resources', 'resourcepacks', 'spawn_gazebo_data', 'data');
+const { list, T } = require('./nbt.js');
+const DATA = path.join(__dirname, '..', 'common', 'src', 'main', 'resources', 'resourcepacks', 'spawn_gazebo_data', 'data');
 const out = (rel, buf) => {
 	const f = path.join(DATA, ...rel.split('/'));
 	fs.mkdirSync(path.dirname(f), { recursive: true });
 	fs.writeFileSync(f, buf);
 };
 
-// Every overworld wood with a fence and stairs. SpawnGazebo.WOODS lists the same names.
-const WOODS = ['oak', 'spruce', 'birch', 'jungle', 'acacia', 'dark_oak', 'mangrove', 'cherry', 'pale_oak', 'bamboo', 'poplar'];
+// Every overworld wood with a fence and stairs in 1.21.1 (pale oak came later). SpawnGazebo.WOODS lists the same names.
+const WOODS = ['oak', 'spruce', 'birch', 'jungle', 'acacia', 'dark_oak', 'mangrove', 'cherry', 'bamboo'];
 
 const PALETTES = {
 	// Grey stone with moss creeping in, a green copper dome with azaleas growing over it, grass and
@@ -35,8 +36,8 @@ const PALETTES = {
 		corners: 'minecraft:flowering_azalea', sides: 'minecraft:pink_petals[facing=north,flower_amount=3]',
 		front: 'minecraft:pink_tulip', back: 'minecraft:allium',
 	},
-	// Sandstone for deserts and badlands: a browner copper dome, no moss, dead bushes and cactus
-	// flowers instead of flowers.
+	// Sandstone for deserts and badlands: a browner copper dome, no moss, dead bushes instead of
+	// flowers (1.21.1 has no cactus flowers).
 	sand: {
 		apron: 'minecraft:sandstone', apronWorn: 'minecraft:cut_sandstone',
 		plinth: 'minecraft:smooth_sandstone', plinthWorn: 'minecraft:sandstone', plinthAccent: 'minecraft:chiseled_sandstone',
@@ -47,7 +48,7 @@ const PALETTES = {
 		dome: ['waxed_weathered', 'waxed_weathered', 'waxed_exposed'], leaves: null,
 		ground: 'minecraft:sand', path: 'minecraft:sand',
 		moss: null,
-		corners: 'minecraft:dead_bush', sides: 'minecraft:cactus_flower', front: 'minecraft:dead_bush', back: 'minecraft:cactus_flower',
+		corners: 'minecraft:dead_bush', sides: 'minecraft:dead_bush', front: 'minecraft:dead_bush', back: 'minecraft:dead_bush',
 	},
 };
 
@@ -152,8 +153,8 @@ function gazebo(wood, p) {
 	set(C + 5, 4, C, railR);
 	set(C - 3, 1, C + 5, stepL);
 	set(C + 3, 1, C + 5, stepR);
-	// 26.3 keeps a pot's sherds by side; a side left out is plain brick.
-	const pot = (front, id, count) => ({ sherds: { front: { id: `minecraft:${front}_pottery_sherd` } }, item: { id: `minecraft:${id}`, count } });
+	// 1.21.1 keeps a pot's sherds as a list, back, left, right, front; a brick is a plain side.
+	const pot = (front, id, count) => ({ sherds: list(T.STRING, ['minecraft:brick', 'minecraft:brick', 'minecraft:brick', `minecraft:${front}_pottery_sherd`]), item: { id: `minecraft:${id}`, count } });
 	const decorated = (x, z, facing, contents) => set(x, 3, z, `minecraft:decorated_pot[cracked=false,facing=${facing},waterlogged=false]`, contents);
 	decorated(C - 3, C - 3, 'south', pot('plenty', 'mangrove_propagule', 2));
 	decorated(C + 3, C - 3, 'south', pot('heart', 'bamboo', 4));
@@ -204,10 +205,10 @@ function gazebo(wood, p) {
 	// corners. With the glowstone in the floor that's all the light the inside needs.
 	set(C, 8, C, 'minecraft:spore_blossom');
 	for (const [x, z] of [[C - 1, C - 1], [C + 1, C + 1]]) set(x, 8, z, 'minecraft:cave_vines[age=25,berries=true]');
-	// A lantern on an iron chain (26.3's name for the chain) under each diagonal of the eaves, and one on a post either side of the
+	// A lantern on a chain under each diagonal of the eaves, and one on a post either side of the
 	// steps, lighting the ground round about.
 	for (const [x, z] of [[C - 4, C - 4], [C + 4, C - 4], [C - 4, C + 4], [C + 4, C + 4]]) {
-		set(x, 6, z, 'minecraft:iron_chain[axis=y,waterlogged=false]');
+		set(x, 6, z, 'minecraft:chain[axis=y,waterlogged=false]');
 		set(x, 5, z, lantern(true));
 	}
 	for (const x of [C - 2, C + 2]) {

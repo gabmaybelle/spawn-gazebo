@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Locale;
 import java.util.Properties;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * Settings in {@code config/spawn_gazebo.properties}. Missing keys get their defaults, and the file
@@ -30,12 +30,12 @@ public final class Config {
 	/** The file as it was read, so settings from a newer version (or added by hand) survive a save. */
 	private static Properties loaded = new Properties();
 
-	/** The mod's own kit: a bed, torches, bread, saplings and a bundle. */
+	/** The mod's own kit: a bed, torches, bread and saplings. */
 	public static final String STARTER_KIT = "starter_kit";
 	/** Vanilla's bonus chest loot: a few tools, logs, planks, food and seeds. */
 	public static final String BONUS_CHEST = "bonus_chest";
-	private static final Identifier STARTER_KIT_TABLE = Identifier.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "chests/spawn_kit");
-	private static final Identifier BONUS_CHEST_TABLE = Identifier.withDefaultNamespace("chests/spawn_bonus_chest");
+	private static final ResourceLocation STARTER_KIT_TABLE = ResourceLocation.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "chests/spawn_kit");
+	private static final ResourceLocation BONUS_CHEST_TABLE = ResourceLocation.withDefaultNamespace("chests/spawn_bonus_chest");
 	/** The gazebo itself reaches this far from its middle; the protected area can't be smaller. */
 	public static final int MIN_RADIUS = SpawnGazebo.HALF, MAX_RADIUS = 64;
 
@@ -54,7 +54,7 @@ public final class Config {
 	}
 
 	/** The loot table the chest is filled from. An id that doesn't parse falls back to the starter kit. */
-	public static Identifier chestLootTable() {
+	public static ResourceLocation chestLootTable() {
 		String value = chestLoot.trim();
 		if (value.isEmpty() || value.equals(STARTER_KIT)) {
 			return starterKitTable();
@@ -62,7 +62,7 @@ public final class Config {
 		if (value.equals(BONUS_CHEST)) {
 			return BONUS_CHEST_TABLE;
 		}
-		Identifier id = Identifier.tryParse(value);
+		ResourceLocation id = ResourceLocation.tryParse(value);
 		if (id == null) {
 			SpawnGazeboMod.LOGGER.warn("Spawn Gazebo: chestLoot \"{}\" isn't a loot table id, using the starter kit", value);
 			return starterKitTable();
@@ -77,9 +77,9 @@ public final class Config {
  * {@code "spawn_gazebo:starter_kit" = "<loot table id>"}.
 	 * (Espresso Flavoured Core bundles this mod and fills the chest with its own kit this way.)
 	 */
-	public static Identifier starterKitTable() {
+	public static ResourceLocation starterKitTable() {
 		for (Map.Entry<String, String> kit : Platform.get().starterKits().entrySet()) {
-			Identifier id = Identifier.tryParse(kit.getValue());
+			ResourceLocation id = ResourceLocation.tryParse(kit.getValue());
 			if (id == null) {
 				SpawnGazeboMod.LOGGER.warn("Spawn Gazebo: {} names a starter kit that isn't a loot table id: \"{}\"", kit.getKey(), kit.getValue());
 				continue;
@@ -127,7 +127,7 @@ public final class Config {
 			props.store(writer, "Spawn Gazebo (also editable in game: Mod Menu > Spawn Gazebo > Config)\n"
 					+ "spawnGazebo: a little round stone gazebo at the world spawn of new worlds\n"
 					+ "starterChest: a chest in the gazebo's railing, like the bonus chest\n"
-					+ "chestLoot: what's in it: starter_kit (a bed, torches, bread, saplings and a bundle), bonus_chest (vanilla's\n"
+					+ "chestLoot: what's in it: starter_kit (a bed, torches, bread and saplings), bonus_chest (vanilla's\n"
 					+ "  bonus chest loot), or any loot table id such as minecraft:chests/village/village_plains_house\n"
 					+ "protectGazebo: the gazebo can only be changed in creative, and explosions, fire and pistons leave it alone\n"
 					+ "protectedRadius: how far from the gazebo's middle that reaches, in blocks (7 is the gazebo itself, up to 64)\n"

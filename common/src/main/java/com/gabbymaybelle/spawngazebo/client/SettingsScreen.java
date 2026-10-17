@@ -9,6 +9,7 @@ import java.util.function.Consumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.options.OptionsSubScreen;
 import net.minecraft.client.server.IntegratedServer;
@@ -36,7 +37,8 @@ public class SettingsScreen extends OptionsSubScreen {
 	protected void addOptions() {
 		boolean onServer = onServer();
 		if (onServer) {
-			list.addHeader(Component.translatable(PREFIX + "on_server"));
+			// 1.21.1's options list has no header row: a line of text across the full width instead.
+			list.addSmall(new StringWidget(310, 20, Component.translatable(PREFIX + "on_server"), font), null);
 		}
 		OptionInstance<?>[] options = {
 				toggle("spawnGazebo", Config.spawnGazebo, v -> Config.spawnGazebo = v),

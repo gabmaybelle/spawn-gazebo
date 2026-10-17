@@ -3,7 +3,7 @@
 // structures (generate-spawn.js). Re-run after editing:
 //   node tools/generate-data.js
 const fs = require('fs'), path = require('path');
-const ROOT = path.join(__dirname, '..', 'src', 'main', 'resources', 'resourcepacks', 'spawn_gazebo_data');
+const ROOT = path.join(__dirname, '..', 'common', 'src', 'main', 'resources', 'resourcepacks', 'spawn_gazebo_data');
 const out = (rel, obj) => {
 	const f = path.join(ROOT, ...rel.split('/'));
 	fs.mkdirSync(path.dirname(f), { recursive: true });
@@ -11,20 +11,20 @@ const out = (rel, obj) => {
 };
 fs.rmSync(ROOT, { recursive: true, force: true });
 
-out('pack.mcmeta', { pack: { description: 'Spawn Gazebo: the gazebo and its starter chest', min_format: 121, max_format: 121 } });
+// 48 is Minecraft 1.21.1's data pack format.
+out('pack.mcmeta', { pack: { description: 'Spawn Gazebo: the gazebo and its starter chest', pack_format: 48 } });
 
 // The starter kit: what's in the chest in the gazebo's north railing. A bed to sleep in, light,
-// a meal and something to plant, with a bundle to carry it.
+// a meal and something to plant. (The 26.x kit's bundle is still an experiment in 1.21.1, so it's left out.)
 const KIT = [
 	{ id: 'minecraft:white_bed', count: 1 },
 	{ id: 'minecraft:torch', count: 16 },
 	{ id: 'minecraft:bread', count: 6 },
 	{ id: 'minecraft:oak_sapling', count: 4 },
-	{ id: 'minecraft:bundle', count: 1 },
 ];
 out('data/spawn_gazebo/loot_table/chests/spawn_kit.json', {
 	type: 'minecraft:chest',
-	pools: KIT.map(({ id, count }) => ({ rolls: 1, entries: [{ type: 'minecraft:item', name: id, modifier: count > 1 ? [{ type: 'minecraft:set_count', count }] : [] }] })),
+	pools: KIT.map(({ id, count }) => ({ rolls: 1, entries: [{ type: 'minecraft:item', name: id, functions: count > 1 ? [{ function: 'minecraft:set_count', count }] : [] }] })),
 });
 out('data/spawn_gazebo/function/starter_kit/give.mcfunction', [
 	'# A roll of the same loot table the chest was filled from, handed straight to a player. The table is',

@@ -5,7 +5,10 @@
 	"name": "Spawn Gazebo game tests",
 	"environment": "*",
 	"entrypoints": {
-		"fabric-client-gametest": [
+		"client": [
+			"com.gabbymaybelle.spawngazebo.harness.GameTestRunner"
+		],
+		"spawn_gazebo:gametest": [
 			"com.gabbymaybelle.spawngazebo.SpawnGazeboClientTest"
 		]
 	},

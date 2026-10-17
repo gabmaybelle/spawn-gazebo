@@ -6,7 +6,7 @@
   "spawn_gazebo.options.starterChest": "Starter Chest",
   "spawn_gazebo.options.starterChest.tooltip": "A chest in the gazebo's railing, like the bonus chest. Later players get the same loot handed to them, or their own chest with Lootr. Only takes effect when a world is created.",
   "spawn_gazebo.options.chestLoot": "Chest Loot",
-  "spawn_gazebo.options.chestLoot.tooltip": "What the starter chest holds. Starter Kit: a bed, torches, bread, saplings and a bundle. Bonus Chest: the random tools, wood, food and seeds of vanilla's bonus chest. Any other loot table can be named in the config file. Only takes effect when a world is created.",
+  "spawn_gazebo.options.chestLoot.tooltip": "What the starter chest holds. Starter Kit: a bed, torches, bread and saplings. Bonus Chest: the random tools, wood, food and seeds of vanilla's bonus chest. Any other loot table can be named in the config file. Only takes effect when a world is created.",
   "spawn_gazebo.options.chestLoot.starter_kit": "Starter Kit",
   "spawn_gazebo.options.chestLoot.bonus_chest": "Bonus Chest",
   "spawn_gazebo.options.chestLoot.custom": "Custom",

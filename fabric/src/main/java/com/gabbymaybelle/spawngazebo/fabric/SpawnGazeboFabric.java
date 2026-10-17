@@ -17,14 +17,14 @@ import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.fabricmc.fabric.api.resource.v1.ResourceLoader;
-import net.fabricmc.fabric.api.resource.v1.pack.PackActivationType;
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
+import net.fabricmc.fabric.api.resource.ResourcePackActivationType;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.api.metadata.CustomValue;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
@@ -33,11 +33,11 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
 public class SpawnGazeboFabric implements ModInitializer {
 	/** Set on the overworld once this world has been looked at, so the gazebo is never built twice. */
 	private static final AttachmentType<Boolean> CHECKED = AttachmentRegistry.create(
-			Identifier.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "spawn_gazebo"),
+			ResourceLocation.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "spawn_gazebo"),
 			builder -> builder.persistent(Codec.BOOL));
 	/** The gazebo's box in the overworld, saved when it's built. */
 	private static final AttachmentType<BoundingBox> BOX = AttachmentRegistry.create(
-			Identifier.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "spawn_gazebo_box"),
+			ResourceLocation.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "spawn_gazebo_box"),
 			builder -> builder.persistent(BoundingBox.CODEC));
 
 	@Override
@@ -101,7 +101,7 @@ public class SpawnGazeboFabric implements ModInitializer {
 		});
 		SpawnGazeboMod.init();
 
-		PayloadTypeRegistry.clientboundPlay().register(GazeboGuard.Box.TYPE, GazeboGuard.Box.CODEC);
+		PayloadTypeRegistry.playS2C().register(GazeboGuard.Box.TYPE, GazeboGuard.Box.CODEC);
 		ServerLifecycleEvents.SERVER_STARTED.register(server -> {
 			SpawnGazebo.onServerStarted(server);
 			GazeboGuard.onServerStarted(server);
@@ -113,7 +113,7 @@ public class SpawnGazeboFabric implements ModInitializer {
 
 		ModContainer mod = FabricLoader.getInstance().getModContainer(SpawnGazeboMod.MOD_ID).orElseThrow();
 		// The gazebo structures, the starter chest's loot table and the functions that hand out the kit.
-		ResourceLoader.registerBuiltinPack(Identifier.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "spawn_gazebo_data"), mod,
-				Component.translatable("pack.spawn_gazebo.data"), PackActivationType.ALWAYS_ENABLED);
+		ResourceManagerHelper.registerBuiltinResourcePack(ResourceLocation.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "spawn_gazebo_data"), mod,
+				Component.translatable("pack.spawn_gazebo.data"), ResourcePackActivationType.ALWAYS_ENABLED);
 	}
 }

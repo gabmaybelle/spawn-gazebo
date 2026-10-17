@@ -16,19 +16,19 @@ description = '''New worlds start in a little round stone gazebo: pillars of wha
 config = "spawn_gazebo.mixins.json"
 
 [[mixins]]
-config = "spawn_gazebo.fire.mixins.json"
+config = "spawn_gazebo.loader.mixins.json"
 
 [[dependencies.spawn_gazebo]]
 modId = "neoforge"
 type = "required"
-versionRange = "[26.3,)"
+versionRange = "[21.1,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.spawn_gazebo]]
 modId = "minecraft"
 type = "required"
-versionRange = "[26.3,26.4)"
+versionRange = "[1.21.1,1.21.2)"
 ordering = "NONE"
 side = "BOTH"
 

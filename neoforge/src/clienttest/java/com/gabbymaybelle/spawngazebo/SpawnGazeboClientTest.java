@@ -14,17 +14,19 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.gamerules.GameRules;
+import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.level.GameRules;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.fml.ModList;
@@ -51,15 +53,15 @@ final class SpawnGazeboClientTest {
 		onServer("a new world's gazebo", server -> {
 			StringBuilder out = new StringBuilder();
 			ServerLevel level = server.overworld();
-			middle = level.getRespawnData().pos();
-			CompoundTag spawn = server.getCommandStorage().get(Identifier.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "spawn"));
-			expect(out, spawn.getBooleanOr("chest", false), "a new world gets the gazebo, with its starter chest");
+			middle = level.getSharedSpawnPos();
+			CompoundTag spawn = server.getCommandStorage().get(ResourceLocation.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "spawn"));
+			expect(out, spawn.getBoolean("chest"), "a new world gets the gazebo, with its starter chest");
 			if (ModList.get().isLoaded("lootr")) {
 				lootrChest(server, level, spawn, out);
 			} else {
-				expect(out, spawn.getBooleanOr("claimed", false), "the first player to join claims the chest's kit");
+				expect(out, spawn.getBoolean("claimed"), "the first player to join claims the chest's kit");
 			}
-			int radius = level.getGameRules().get(GameRules.RESPAWN_RADIUS);
+			int radius = level.getGameRules().getInt(GameRules.RULE_SPAWN_RADIUS);
 			expect(out, radius == 0, "building the gazebo sets the spawn radius to 0 (got " + radius + ")");
 			expect(out, Platform.get().gazeboChecked(level), "the world remembers it has been given its gazebo");
 			expect(out, Platform.get().savedBox(level) != null, "the world remembers where the gazebo is");
@@ -76,12 +78,12 @@ final class SpawnGazeboClientTest {
 	 * kit isn't handed out on joining and the chest still rolls the starter kit.
 	 */
 	private static void lootrChest(MinecraftServer server, ServerLevel level, CompoundTag spawn, StringBuilder out) {
-		if (!spawn.getBooleanOr("lootr", false)) {
+		if (!spawn.getBoolean("lootr")) {
 			out.append("\n  the gazebo noted that Lootr is installed");
 			return;
 		}
 		for (BlockPos pos : BlockPos.betweenClosed(middle.offset(-8, -3, -8), middle.offset(8, 3, 8))) {
-			Identifier id = BuiltInRegistries.BLOCK.getKey(level.getBlockState(pos).getBlock());
+			ResourceLocation id = BuiltInRegistries.BLOCK.getKey(level.getBlockState(pos).getBlock());
 			if (id.getNamespace().equals("lootr") && id.getPath().contains("chest")) {
 				if (server.getPlayerList().getPlayers().getFirst().getInventory().contains(new ItemStack(Items.TORCH))) {
 					out.append("\n  with Lootr the kit isn't handed out on joining");
@@ -152,6 +154,15 @@ final class SpawnGazeboClientTest {
 			expect(failures, !player.gameMode.destroyBlock(inside), "the lawn inside the radius can be broken");
 			expect(failures, level.getBlockState(inside).is(Blocks.GRASS_BLOCK), "the lawn inside the radius is still there");
 			expect(failures, player.gameMode.destroyBlock(outside.above()), "the planks outside the radius can't be broken");
+
+			// A water bucket: nothing poured inside the radius, water just outside it. NeoForge's own emptyContents,
+			// which takes the bucket (vanilla's version only passes the call on to it).
+			BucketItem bucket = (BucketItem) Items.WATER_BUCKET;
+			expect(failures, !bucket.emptyContents(player, level, inside.above(), null, new ItemStack(Items.WATER_BUCKET)), "water can be poured inside the radius");
+			expect(failures, level.getBlockState(inside.above()).isAir(), "no water appears inside the radius");
+			expect(failures, bucket.emptyContents(player, level, outside.above(), null, new ItemStack(Items.WATER_BUCKET)), "water can't be poured outside the radius");
+			expect(failures, level.getFluidState(outside.above()).is(Fluids.WATER), "the water appears outside the radius");
+			level.setBlockAndUpdate(outside.above(), Blocks.AIR.defaultBlockState());
 
 			player.setGameMode(GameType.CREATIVE);
 			expect(failures, player.gameMode.destroyBlock(inside), "a creative player can't break the lawn inside the radius");

@@ -1,12 +1,12 @@
 // Builds structure (.nbt) files block by block. Used by the café and rest-spot generators.
 const { write, list, T } = require('./nbt.js');
-const DATA_VERSION = 5023; // Minecraft 26.3
+const DATA_VERSION = 3955; // Minecraft 1.21.1
 
-// 'minecraft:oak_stairs[facing=east,half=bottom]' -> { id, properties }
+// 'minecraft:oak_stairs[facing=east,half=bottom]' -> { Name, Properties }, 1.21.1's palette entry (26.x calls them id and properties)
 function parse(state) {
 	const m = /^([^\[]+)(?:\[(.*)\])?$/.exec(state);
 	const properties = m[2] ? Object.fromEntries(m[2].split(',').map(kv => kv.split('='))) : undefined;
-	return properties ? { id: m[1], properties } : { id: m[1] };
+	return properties ? { Name: m[1], Properties: properties } : { Name: m[1] };
 }
 
 class Structure {

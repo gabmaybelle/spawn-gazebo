@@ -7,7 +7,7 @@
         {
           "type": "minecraft:item",
           "name": "minecraft:white_bed",
-          "modifier": []
+          "functions": []
         }
       ]
     },
@@ -17,9 +17,9 @@
         {
           "type": "minecraft:item",
           "name": "minecraft:torch",
-          "modifier": [
+          "functions": [
             {
-              "type": "minecraft:set_count",
+              "function": "minecraft:set_count",
               "count": 16
             }
           ]
@@ -32,9 +32,9 @@
         {
           "type": "minecraft:item",
           "name": "minecraft:bread",
-          "modifier": [
+          "functions": [
             {
-              "type": "minecraft:set_count",
+              "function": "minecraft:set_count",
               "count": 6
             }
           ]
@@ -47,22 +47,12 @@
         {
           "type": "minecraft:item",
           "name": "minecraft:oak_sapling",
-          "modifier": [
+          "functions": [
             {
-              "type": "minecraft:set_count",
+              "function": "minecraft:set_count",
               "count": 4
             }
           ]
-        }
-      ]
-    },
-    {
-      "rolls": 1,
-      "entries": [
-        {
-          "type": "minecraft:item",
-          "name": "minecraft:bundle",
-          "modifier": []
         }
       ]
     }

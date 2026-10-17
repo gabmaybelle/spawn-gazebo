@@ -7,7 +7,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -50,7 +50,7 @@ public final class GazeboGuard {
 
 	/** Where the gazebo is, and whether it's protected, sent to each player as they join. */
 	public record Box(Optional<BoundingBox> box) implements CustomPacketPayload {
-		public static final Type<Box> TYPE = new Type<>(Identifier.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "gazebo_box"));
+		public static final Type<Box> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "gazebo_box"));
 		private static final StreamCodec<ByteBuf, BoundingBox> BOX_CODEC = StreamCodec.composite(
 				ByteBufCodecs.VAR_INT, BoundingBox::minX, ByteBufCodecs.VAR_INT, BoundingBox::minY, ByteBufCodecs.VAR_INT, BoundingBox::minZ,
 				ByteBufCodecs.VAR_INT, BoundingBox::maxX, ByteBufCodecs.VAR_INT, BoundingBox::maxY, ByteBufCodecs.VAR_INT, BoundingBox::maxZ,

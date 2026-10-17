@@ -1,5 +1,5 @@
 plugins {
-	id 'net.fabricmc.fabric-loom' version "${loom_version}"
+	id 'fabric-loom' version "${loom_version}"
 }
 
 repositories {
@@ -14,6 +14,10 @@ sourceSets.main {
 }
 
 loom {
+	// Named for this mod: the default, fabric-refmap.json, would clash with any other mod built the same way.
+	mixin {
+		defaultRefmapName = "spawn_gazebo-refmap.json"
+	}
 	mods {
 		"spawn_gazebo" {
 			sourceSet sourceSets.main
@@ -24,15 +28,19 @@ loom {
 dependencies {
 	// Versions are in gradle.properties.
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
-	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	// 1.21.1 ships obfuscated: the code is written in the official Mojang names and Loom remaps.
+	mappings loom.officialMojangMappings()
+	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 	// Mod Menu: only for the Config button; not bundled or required.
-	compileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
+	modCompileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
 
 	// `./gradlew :fabric:runClientGameTest -PtestLootr` runs the game test with Lootr installed
-	// (Modrinth version id gVwn7m2v: Lootr 1.25.42.124 for Fabric 26.3). Not bundled or required.
+	// (Modrinth version id nar56EsW: Lootr 1.11.38.127 for Fabric 1.21.1). Not bundled or required.
 	if (project.hasProperty("testLootr")) {
-		runtimeOnly "maven.modrinth:lootr:gVwn7m2v"
+		modLocalRuntime "maven.modrinth:lootr:nar56EsW"
+		// Lootr for 1.21.1 needs Cloth Config (Modrinth version id HpMb5wGb: 15.0.140 for Fabric).
+		modLocalRuntime "maven.modrinth:cloth-config:HpMb5wGb"
 	}
 }
 
@@ -47,17 +55,51 @@ processResources {
 
 // Client game tests: `./gradlew :fabric:runClientGameTest` starts a real game, opens the settings
 // screen (from the title screen, in a world and on a server) and checks a new world gets its gazebo.
-// The tests live in src/gametest; nothing there ships in the jar.
-fabricApi {
-	configureTests {
-		createSourceSet = true
-		modId = "spawn_gazebo_gametest"
-		enableGameTests = false
-		enableClientGameTests = true
-		eula = true
+// The tests live in src/gametest; nothing there ships in the jar. Fabric's client game test API
+// doesn't exist for 1.21.1, so the harness is the test's own (src/gametest/.../harness) and the run
+// is a plain client run with the test source set as a second mod.
+sourceSets {
+	gametest {
+		compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+		runtimeClasspath += sourceSets.main.runtimeClasspath + sourceSets.main.output
+	}
+}
+
+loom {
+	mods {
+		"spawn_gazebo_gametest" {
+			sourceSet sourceSets.gametest
+		}
+	}
+	runs {
+		clientGameTest {
+			client()
+			name = "Client Game Test"
+			source sourceSets.gametest
+			runDir "build/run/clientGameTest"
+			property "spawn_gazebo.gametest", "true"
+			programArgs "--width", "854", "--height", "480"
+			ideConfigGenerated false
+			// `-PtestServer=localhost:25565`: also join this dedicated server (offline mode, with the mod)
+			// and check the settings are greyed out there.
+			if (project.hasProperty("testServer")) {
+				property "spawn_gazebo.gametest.server", project.property("testServer").toString()
+			}
+		}
+	}
+}
+
+// Every run starts from the default settings, as Fabric's own client game test does on 26.x; here
+// the run folder is kept between runs, and so are its worlds (each test world is named with the time).
+def gameTestConfig = file('build/run/clientGameTest/config')
+tasks.matching { it.name == 'runClientGameTest' }.configureEach {
+	doFirst {
+		delete new File(gameTestConfig, 'spawn_gazebo.properties')
 	}
 }
 
 // spawn-gazebo-fabric-<version>.jar, the name players download.
 tasks.named('jar') { archiveBaseName = "${rootProject.name}-fabric" }
 tasks.named('sourcesJar') { archiveBaseName = "${rootProject.name}-fabric" }
+tasks.named('remapJar') { archiveBaseName = "${rootProject.name}-fabric" }
+tasks.named('remapSourcesJar') { archiveBaseName = "${rootProject.name}-fabric" }

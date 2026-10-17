@@ -1,7 +1,6 @@
 {
   "pack": {
     "description": "Spawn Gazebo: the gazebo and its starter chest",
-    "min_format": 121,
-    "max_format": 121
+    "pack_format": 48
   }
 }

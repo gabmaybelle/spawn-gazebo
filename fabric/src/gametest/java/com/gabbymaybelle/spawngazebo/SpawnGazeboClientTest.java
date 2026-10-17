@@ -6,11 +6,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
-import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
-import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
-import net.fabricmc.fabric.api.client.gametest.v1.context.TestDedicatedServerContext;
-import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
-import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
+import com.gabbymaybelle.spawngazebo.harness.ClientGameTest;
+import com.gabbymaybelle.spawngazebo.harness.ClientGameTestContext;
+import com.gabbymaybelle.spawngazebo.harness.TestServerContext;
+import com.gabbymaybelle.spawngazebo.harness.TestSingleplayerContext;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -21,51 +20,62 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.gamerules.GameRules;
+import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.level.GameRules;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The settings screen in a real game: from the title screen (where Mod Menu opens it), in a
  * world you're hosting, and greyed out on someone else's server. Also checks a new world gets
  * its gazebo. Run with `./gradlew runClientGameTest`; screenshots land in
- * build/run/clientGameTest/screenshots.
+ * build/run/clientGameTest/screenshots. The server part needs a dedicated server with the mod
+ * already running (offline mode): `-PtestServer=localhost:25565` connects to it; without it that
+ * part is skipped and says so in the log.
  */
-public class SpawnGazeboClientTest implements FabricClientGameTest {
+public class SpawnGazeboClientTest implements ClientGameTest {
+	private static final Logger LOGGER = LoggerFactory.getLogger("Spawn Gazebo test");
+
 	@Override
 	public void runTest(ClientGameTestContext ctx) {
 		settingsFile();
 		titleScreenSettings(ctx);
 		try (TestSingleplayerContext world = ctx.worldBuilder().create()) {
-			world.getConnection().waitForChunksRender();
+			world.waitForChunksRender();
 			CompoundTag spawn = world.getServer().computeOnServer(server -> server.getCommandStorage()
-					.get(Identifier.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "spawn")));
-			check(spawn.getBooleanOr("chest", false), "a new world gets the gazebo, with its starter chest");
+					.get(ResourceLocation.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "spawn")));
+			check(spawn.getBoolean("chest"), "a new world gets the gazebo, with its starter chest");
 			if (FabricLoader.getInstance().isModLoaded("lootr")) {
 				lootrChest(world.getServer());
 			} else {
-				check(spawn.getBooleanOr("claimed", false), "the first player to join claims the chest's kit");
+				check(spawn.getBoolean("claimed"), "the first player to join claims the chest's kit");
 			}
-			int radius = world.getServer().computeOnServer(server -> server.overworld().getGameRules().get(GameRules.RESPAWN_RADIUS));
+			int radius = world.getServer().computeOnServer(server -> server.overworld().getGameRules().getInt(GameRules.RULE_SPAWN_RADIUS));
 			check(radius == 0, "building the gazebo sets the spawn radius to 0 (got " + radius + ")");
 			ctx.takeScreenshot("spawn_gazebo_new_world");
 			protection(world.getServer());
 			inWorldSettings(ctx);
 		}
-		try (TestDedicatedServerContext server = ctx.worldBuilder().createServer()) {
-			try (var connection = server.connect()) {
-				connection.waitForChunksRender();
-				onServerSettings(ctx);
-			}
+		String address = System.getProperty("spawn_gazebo.gametest.server");
+		if (address == null) {
+			LOGGER.info("[test] no dedicated server given (-PtestServer): the on-a-server settings check is skipped");
+			return;
+		}
+		try (TestSingleplayerContext server = ctx.connect(address)) {
+			server.waitForChunksRender();
+			onServerSettings(ctx);
 		}
 	}
 
@@ -142,7 +152,7 @@ public class SpawnGazeboClientTest implements FabricClientGameTest {
 		String result = server.computeOnServer(s -> {
 			ServerLevel level = s.overworld();
 			ServerPlayer player = s.getPlayerList().getPlayers().getFirst();
-			BlockPos middle = level.getRespawnData().pos();
+			BlockPos middle = level.getSharedSpawnPos();
 			int ground = middle.getY() - 3;
 			// The lawn 10 blocks out (inside the radius) and 14 out (outside it), off the gazebo's footprint.
 			BlockPos inside = new BlockPos(middle.getX() + 10, ground, middle.getZ());
@@ -168,6 +178,14 @@ public class SpawnGazeboClientTest implements FabricClientGameTest {
 			expect(failures, !player.gameMode.destroyBlock(inside), "the lawn inside the radius can be broken");
 			expect(failures, level.getBlockState(inside).is(Blocks.GRASS_BLOCK), "the lawn inside the radius is still there");
 			expect(failures, player.gameMode.destroyBlock(outside.above()), "the planks outside the radius can't be broken");
+
+			// A water bucket: nothing poured inside the radius, water just outside it.
+			BucketItem bucket = (BucketItem) Items.WATER_BUCKET;
+			expect(failures, !bucket.emptyContents(player, level, inside.above(), null), "water can be poured inside the radius");
+			expect(failures, level.getBlockState(inside.above()).isAir(), "no water appears inside the radius");
+			expect(failures, bucket.emptyContents(player, level, outside.above(), null), "water can't be poured outside the radius");
+			expect(failures, level.getFluidState(outside.above()).is(Fluids.WATER), "the water appears outside the radius");
+			level.setBlockAndUpdate(outside.above(), Blocks.AIR.defaultBlockState());
 
 			player.setGameMode(GameType.CREATIVE);
 			expect(failures, player.gameMode.destroyBlock(inside), "a creative player can't break the lawn inside the radius");
@@ -225,13 +243,13 @@ public class SpawnGazeboClientTest implements FabricClientGameTest {
 	private static void lootrChest(TestServerContext server) {
 		String result = server.computeOnServer(s -> {
 			ServerLevel level = s.overworld();
-			CompoundTag spawn = s.getCommandStorage().get(Identifier.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "spawn"));
-			if (!spawn.getBooleanOr("lootr", false)) {
+			CompoundTag spawn = s.getCommandStorage().get(ResourceLocation.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "spawn"));
+			if (!spawn.getBoolean("lootr")) {
 				return "the gazebo noted that Lootr is installed";
 			}
-			BlockPos middle = level.getRespawnData().pos();
+			BlockPos middle = level.getSharedSpawnPos();
 			for (BlockPos pos : BlockPos.betweenClosed(middle.offset(-8, -3, -8), middle.offset(8, 3, 8))) {
-				Identifier id = BuiltInRegistries.BLOCK.getKey(level.getBlockState(pos).getBlock());
+				ResourceLocation id = BuiltInRegistries.BLOCK.getKey(level.getBlockState(pos).getBlock());
 				if (id.getNamespace().equals("lootr") && id.getPath().contains("chest")) {
 					boolean kitHandedOut = s.getPlayerList().getPlayers().getFirst().getInventory().contains(new ItemStack(Items.TORCH));
 					return kitHandedOut ? "with Lootr the kit isn't handed out on joining" : "";
@@ -264,7 +282,7 @@ public class SpawnGazeboClientTest implements FabricClientGameTest {
 			check(widget != null && !widget.active, label + " is greyed out on a server");
 		}
 		// The server's chat and social toasts would cover the screen.
-		ctx.runOnClient(mc -> mc.gui.toastManager().clear());
+		ctx.runOnClient(mc -> mc.getToasts().clear());
 		ctx.waitTick();
 		ctx.takeScreenshot("spawn_gazebo_settings_on_server");
 		ctx.getInput().pressKey(InputConstants.KEY_ESCAPE);
@@ -282,7 +300,7 @@ public class SpawnGazeboClientTest implements FabricClientGameTest {
 	/** A widget on the current screen (searching inside option lists too) whose label contains the text. */
 	private static AbstractWidget widgetNamed(ClientGameTestContext ctx, String text) {
 		return ctx.computeOnClient(mc -> {
-			ArrayDeque<GuiEventListener> queue = new ArrayDeque<>(mc.gui.screen().children());
+			ArrayDeque<GuiEventListener> queue = new ArrayDeque<>(mc.screen.children());
 			while (!queue.isEmpty()) {
 				GuiEventListener child = queue.poll();
 				if (child instanceof AbstractWidget widget && widget.getMessage().getString().contains(text)) {

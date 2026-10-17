@@ -1,6 +1,6 @@
 # Spawn Gazebo
 
-A small Fabric and NeoForge mod for Minecraft 26.3 (mod ID `spawn_gazebo`): new worlds start in a round stone
+A small Fabric and NeoForge mod for Minecraft 26.3, and on the `1.21.1` branch for 1.21.1 (mod ID `spawn_gazebo`): new worlds start in a round stone
 gazebo with a copper dome, built once at the world spawn, with an optional starter chest and
 protection round it. See README.md for what players get.
 
@@ -18,10 +18,10 @@ it first, and add this session's row before ending.
   loader's events call. The built-in data pack is `resourcepacks/spawn_gazebo_data`.
 - `fabric/`: `SpawnGazeboFabric` (Fabric API events, attachments, networking, built-in pack),
   `SpawnGazeboFabricClient`, `ModMenuIntegration`, `fabric.mod.json`, its own `FireBlockMixin` and
-  `spawn_gazebo.fire.mixins.json`, and `src/gametest/` (the client game test, `SpawnGazeboClientTest`).
+  `spawn_gazebo.loader.mixins.json` (on 1.21.1 with its own `BucketItemMixin` too), and `src/gametest/` (the client game test, `SpawnGazeboClientTest`; on 1.21.1 with its own `harness/`, since Fabric has no client game test API there).
 - `neoforge/`: `SpawnGazeboNeoForge` (events, attachments, an optional payload, the data pack through
   `AddPackFindersEvent`), `SpawnGazeboNeoForgeClient` (the Mods screen's Config button), its own
-  `FireBlockMixin` and `spawn_gazebo.fire.mixins.json`, `neoforge.mods.toml`, and `src/clienttest/` (the
+  `FireBlockMixin` (and on 1.21.1 `BucketItemMixin`) and `spawn_gazebo.loader.mixins.json`, `neoforge.mods.toml`, and `src/clienttest/` (the
   NeoForge in-game test; part of the mod only in dev runs, never in the jar).
 - `tools/`: `generate-spawn.js` writes the gazebo templates, `generate-data.js` the data pack,
   `render-gazebo.js` the icon and the README picture.
@@ -31,8 +31,8 @@ it first, and add this session's row before ending.
 - `./gradlew build`: jars in `fabric/build/libs/` and `neoforge/build/libs/`.
 - `./gradlew :neoforge:runClientTest` (NeoForge): the settings file, a new world's gazebo (kit claimed, spawn radius 0), that the world remembers it and where, that the player's game is told the box, and protection incl. the right-click refusal. A failed check crashes the game with a report in `neoforge/build/run/clientTest/crash-reports/`; a watchdog stops a hang after 10 minutes.
 - `./gradlew :fabric:runClientGameTest` (Fabric): the settings file (typos, unknown settings, safe saving), the settings screen (title screen, in a world, greyed out on a
-  server), saving, a new world's gazebo, and protection inside and just outside the radius.
-- `-PtestLootr` works on both tasks (`:fabric:runClientGameTest`, `:neoforge:runClientTest`): Lootr is installed (NeoForge: Modrinth id `PdFGq3vT`, Fabric `gVwn7m2v`) and the test checks the starter chest became a Lootr chest and the kit isn't handed out on joining. CI runs both with and without it.
+  server), saving, a new world's gazebo, and protection inside and just outside the radius (blocks, paths and a water bucket).
+- `-PtestLootr` works on both tasks (`:fabric:runClientGameTest`, `:neoforge:runClientTest`): Lootr is installed (NeoForge: Modrinth id `PdFGq3vT`, Fabric `gVwn7m2v`; on 1.21.1 `SPOrIzX8` and `nar56EsW`, plus Cloth Config `HpMb5wGb` on Fabric) and the test checks the starter chest became a Lootr chest and the kit isn't handed out on joining. CI runs both with and without it.
 
 ## Gotchas
 
@@ -43,6 +43,7 @@ it first, and add this session's row before ending.
   sits players on the benches, which is why the guard lets wooden stairs through with a tool in hand.
 - **Fabric worlds keep their gazebo.** Fabric stores whether a world was checked and where the gazebo is as attachments `spawn_gazebo` and `spawn_gazebo_box`; they must keep those ids, or an existing world would be given a second gazebo or lose its protection.
 - **One mixin differs by loader.** NeoForge's patched `FireBlock.checkBurnOut` takes an extra `Direction`, so `FireBlockMixin` has a copy in `fabric/` and one in `neoforge/` (each with its own mixin config). The game crashes on launch if a mixin doesn't match, and the NeoForge test is what caught this. Check the others when a Minecraft version changes.
+- **1.21.1 branch.** NeoForge 21.1 also patches `BucketItem.emptyContents` (it takes the bucket; vanilla's version passes the call on to it), so that mixin has a copy per loader too. The generators write 1.21.1 data on this branch: data version 3955, pack format 48, structure palette entries as `Name`/`Properties` (26.x's `id`/`properties` load as air on 1.21.1, an empty gazebo with no warning but the missing chest), loot `functions` with `function` keys, decorated pot sherds as a list, `chain`, and no pale oak, poplar, cactus flower or bundle. The Fabric test's on-a-server part runs only with `-PtestServer=<address>` (a dedicated server with the mod, offline mode).
 - **The structure files are generated.** Edit `tools/generate-spawn.js` and re-run
   `node tools/generate-data.js`; don't edit the `.nbt` files.
 - **Lootr:** with Lootr installed the chest becomes a Lootr chest. Lootr 1.25.42 converts it by

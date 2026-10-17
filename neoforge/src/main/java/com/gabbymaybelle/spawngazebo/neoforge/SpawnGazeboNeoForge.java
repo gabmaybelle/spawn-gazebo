@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.PackType;
@@ -30,7 +30,7 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddPackFindersEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
-import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
+import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -48,10 +48,10 @@ public class SpawnGazeboNeoForge {
 	private static final DeferredRegister<AttachmentType<?>> ATTACHMENTS = DeferredRegister.create(NeoForgeRegistries.ATTACHMENT_TYPES, SpawnGazeboMod.MOD_ID);
 	/** Set on the overworld once this world has been looked at, so the gazebo is never built twice. */
 	private static final Supplier<AttachmentType<Boolean>> CHECKED = ATTACHMENTS.register("spawn_gazebo",
-			() -> AttachmentType.builder(() -> false).serialize(Codec.BOOL.fieldOf("checked")).build());
+			() -> AttachmentType.builder(() -> false).serialize(Codec.BOOL.fieldOf("checked").codec()).build());
 	/** The gazebo's box in the overworld, saved when it's built. */
 	private static final Supplier<AttachmentType<Optional<BoundingBox>>> BOX = ATTACHMENTS.register("spawn_gazebo_box",
-			() -> AttachmentType.builder(() -> Optional.<BoundingBox>empty()).serialize(BoundingBox.CODEC.optionalFieldOf("box")).build());
+			() -> AttachmentType.builder(() -> Optional.<BoundingBox>empty()).serialize(BoundingBox.CODEC.optionalFieldOf("box").codec()).build());
 	/** A mod's starter kit in its neoforge.mods.toml: [modproperties.<its id>] "spawn_gazebo:starter_kit" = "<loot table id>". */
 	private static final String KIT_PROPERTY = SpawnGazeboMod.MOD_ID + ":starter_kit";
 
@@ -130,7 +130,7 @@ public class SpawnGazeboNeoForge {
 	/** The gazebo structures, the starter chest's loot table and the functions that hand out the kit, always on. */
 	private static void packs(AddPackFindersEvent event) {
 		if (event.getPackType() == PackType.SERVER_DATA) {
-			event.addPackFinders(Identifier.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "resourcepacks/spawn_gazebo_data"), PackType.SERVER_DATA,
+			event.addPackFinders(ResourceLocation.fromNamespaceAndPath(SpawnGazeboMod.MOD_ID, "resourcepacks/spawn_gazebo_data"), PackType.SERVER_DATA,
 					Component.translatable("pack.spawn_gazebo.data"), PackSource.BUILT_IN, true, Pack.Position.TOP);
 		}
 	}
@@ -150,7 +150,7 @@ public class SpawnGazeboNeoForge {
 		}
 	}
 
-	private static void blockBreak(BreakBlockEvent event) {
+	private static void blockBreak(BlockEvent.BreakEvent event) {
 		if (event.getLevel() instanceof Level level && !GazeboGuard.allowBreak(level, event.getPlayer(), event.getPos(), event.getState())) {
 			event.setCanceled(true);
 		}

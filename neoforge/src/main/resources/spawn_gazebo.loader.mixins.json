@@ -1,8 +1,9 @@
 {
 	"required": true,
 	"package": "com.gabbymaybelle.spawngazebo.mixin",
-	"compatibilityLevel": "JAVA_25",
+	"compatibilityLevel": "JAVA_21",
 	"mixins": [
+		"BucketItemMixin",
 		"FireBlockMixin"
 	],
 	"injectors": {
