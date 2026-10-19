@@ -6,14 +6,15 @@ which checks fail, code put back), what was learned, and what was deliberately n
 
 ## Where things stand
 
-- **Done:** Spawn Gazebo 1.2.0 (Fabric and NeoForge, released; on this branch 1.3.0+1.21.1 for Minecraft 1.21.1, ready, with /spawngazebo build): a round stone gazebo at the world spawn, a protected radius, a starter chest whose kit another mod can supply, lava near it set to stone; client game test (settings, a new world's gazebo, protection inside and outside the radius, Lootr), CI on every push.
+- **Done:** Spawn Gazebo for Minecraft 1.21.1 (this branch) and 26.3 (`main`), Fabric and NeoForge, every change so far released (versions: the GitHub releases): a round stone gazebo at the world spawn, a protected radius, a starter chest whose kit another mod can supply, lava near it set to stone, and `/spawngazebo build` for existing worlds (lifts anyone standing there onto the floor, refuses to build on top of a gazebo); client game test (settings, a new world's gazebo, protection inside and outside the radius, Lootr, the build command), CI on every push.
 - **Broken:** Nothing known.
-- **Next:** Nothing planned beyond feedback. Espresso Flavoured Core bundles it (jar-in-jar) and the Espresso Flavoured pack carries it as its own jar.
+- **Next:** Nothing planned beyond feedback; a 1.20.1 version only if players ask for one. Espresso Flavoured Core bundles it (jar-in-jar) and the Espresso Flavoured pack carries it as its own jar.
 
 ## Log
 
 | Date | Session | What happened |
 | --- | --- | --- |
+| 2026-10-19 | Notes | "Where things stand" brought up to date (it still called 1.3.0 unreleased) and written without version numbers, so it no longer goes stale at each release; Forgemark, now retired, taken out of the who-does-what map in CLAUDE.md. No code change. |
 | 2026-10-19 | No stacking (1.21.1) | Found in the 1.3.1 hand play: `/spawngazebo build` inside an existing gazebo built the new one on its roof (ground read from the heightmap) and pushed cobblestone foundation columns down through the old one. `GazeboCommand` now refuses, at the ask and again at the confirm, when the 15 by 15 area overlaps the protected gazebo's saved box or has the dome's cut copper or lightning rod on its surface (an older, unprotected gazebo), and says where the gazebo is. The Fabric game test and the NeoForge in-game test ask in the new gazebo and in the old one (both refused, nothing to confirm, spawn unchanged) and check that 16 blocks off nothing is in the way. Not released. |
 | 2026-10-19 | Build lifts players | The 26.3 fix ported: `/spawngazebo build confirm` used to leave the operator inside the plinth (feet at ground+1, the floor at ground+3). `GazeboCommand.liftPlayersOut` now moves every player whose hitbox touches the new gazebo's protected box to the new spawn on its floor, facing out of the entrance (`getSharedSpawnAngle`), with a message (English fallback, `spawn_gazebo.command.moved`); spectators and players elsewhere stay put. The build check in the Fabric game test and the NeoForge in-game test now has a real player stand at the build spot and run the command: they end up at the new spawn, facing out, with no block in their hitbox and a block underfoot; a player 1.5 blocks past the edge isn't moved. Both pass. Proof run: with the lift switched off, the Fabric test failed (feet at y=-60 in stone bricks, spawn at y=-58); code put back. Not released. |
 | 2026-10-17 | Release prep | Version 1.3.0+1.21.1 and its changelog (`/spawngazebo build`). No code change. Not released. |
