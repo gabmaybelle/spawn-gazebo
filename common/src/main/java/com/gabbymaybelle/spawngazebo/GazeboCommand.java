@@ -8,11 +8,13 @@ import java.util.UUID;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.phys.AABB;
 
@@ -53,6 +55,9 @@ public final class GazeboCommand {
 			return 0;
 		}
 		BlockPos at = BlockPos.containing(source.getPosition());
+		if (refuseOnGazebo(source, level, at)) {
+			return 0;
+		}
 		PENDING.put(key(source), new Pending(at, level.getGameTime() + CONFIRM_TICKS));
 		source.sendSuccess(() -> Component.translatableWithFallback("spawn_gazebo.command.ask", "This builds a gazebo centred here (%s, %s): trees and blocks in a 15 by 15 area are cleared and built over, and the world spawn and the protection move to it.", at.getX(), at.getZ()), false);
 		BoundingBox old = Platform.get().savedBox(level);
@@ -71,6 +76,9 @@ public final class GazeboCommand {
 			source.sendFailure(Component.translatableWithFallback("spawn_gazebo.command.nothing_to_confirm", "Nothing to confirm: run /spawngazebo build first, where you want the gazebo."));
 			return 0;
 		}
+		if (refuseOnGazebo(source, level, pending.at())) {
+			return 0;
+		}
 		BlockPos middle;
 		try {
 			middle = SpawnGazebo.build(level, pending.at().getX(), pending.at().getZ(), true);
@@ -86,6 +94,43 @@ public final class GazeboCommand {
 		BlockPos built = middle;
 		source.sendSuccess(() -> Component.translatableWithFallback("spawn_gazebo.command.built", "Built the gazebo; the world spawn is now in it (%s, %s, %s).", built.getX(), built.getY(), built.getZ()), true);
 		return 1;
+	}
+
+	/**
+	 * Building where a gazebo already stands would put the new one on the old one's roof, with its
+	 * foundation driven down through the old one, so the command says so and builds nothing.
+	 */
+	private static boolean refuseOnGazebo(CommandSourceStack source, ServerLevel level, BlockPos at) {
+		BlockPos found = gazeboNear(level, at.getX(), at.getZ());
+		if (found == null) {
+			return false;
+		}
+		source.sendFailure(Component.translatableWithFallback("spawn_gazebo.command.already_here", "There's already a gazebo here (near %s, %s). Stand at least 15 blocks from it to build another.", found.getX(), found.getZ()));
+		return true;
+	}
+
+	/**
+	 * A gazebo whose blocks a new one centred on this column would land on, or null: the protected
+	 * gazebo the world remembers, or an older one, found by its cut copper dome or lightning rod on
+	 * the surface of the 15 by 15 area.
+	 */
+	static BlockPos gazeboNear(ServerLevel level, int cx, int cz) {
+		int half = SpawnGazebo.HALF;
+		BoundingBox saved = Platform.get().savedBox(level);
+		if (saved != null && saved.minX() <= cx + half && saved.maxX() >= cx - half && saved.minZ() <= cz + half && saved.maxZ() >= cz - half) {
+			return saved.getCenter();
+		}
+		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+		for (int x = cx - half; x <= cx + half; x++) {
+			for (int z = cz - half; z <= cz + half; z++) {
+				pos.set(x, level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) - 1, z);
+				String path = BuiltInRegistries.BLOCK.getKey(level.getBlockState(pos).getBlock()).getPath();
+				if (path.contains("cut_copper") || path.equals("lightning_rod")) {
+					return pos.immutable();
+				}
+			}
+		}
+		return null;
 	}
 
 	/**
