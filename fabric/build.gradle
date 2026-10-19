@@ -58,6 +58,21 @@ fabricApi {
 	}
 }
 
+// `./gradlew :fabric:runClientGameTest -PvideoTour` also films the listing video and the Short (VideoTour),
+// frames in build/run/clientGameTest/video_tour; `-PvideoSeed=<seed>` picks the world and
+// `-PvideoScenes=<scene,scene>` films only those scenes. Without
+// -PvideoTour the game test runs as usual.
+if (project.hasProperty("videoTour")) {
+	tasks.matching { it.name == 'runClientGameTest' }.configureEach {
+		systemProperty 'spawngazebo.videoTour', 'true'
+		for (name in ['videoSeed', 'videoScenes']) {
+			if (project.hasProperty(name)) {
+				systemProperty "spawngazebo.${name}", project.property(name).toString()
+			}
+		}
+	}
+}
+
 // spawn-gazebo-fabric-<version>.jar, the name players download.
 tasks.named('jar') { archiveBaseName = "${rootProject.name}-fabric" }
 tasks.named('sourcesJar') { archiveBaseName = "${rootProject.name}-fabric" }

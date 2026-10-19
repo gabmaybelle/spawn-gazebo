@@ -6,7 +6,8 @@
 	"environment": "*",
 	"entrypoints": {
 		"fabric-client-gametest": [
-			"com.gabbymaybelle.spawngazebo.SpawnGazeboClientTest"
+			"com.gabbymaybelle.spawngazebo.SpawnGazeboClientTest",
+			"com.gabbymaybelle.spawngazebo.VideoTour"
 		]
 	},
 	"depends": {
