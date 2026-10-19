@@ -70,8 +70,6 @@ One job per mod, decided 2026-10-15, so nothing is done twice and each repo tell
   tools that change blocks while a shield is in the off-hand.
 - **Beyond the Dragon** (beyond-the-dragon): the end-game after the Ender Dragon: ruins at the
   edge of the End, a dragon that comes back harder, and the aphelite metal.
-- **Forgemark** (forgemark): tempering the tools, weapons and armour you already have, from any
-  mod, for a small capped quality bonus.
 - **Espresso Flavoured** (espresso-flavoured-pack): the modpack that puts them together. Since
   pack 0.5.0 (2026-10-15) it carries all five: Cozy Core, Espresso Flavoured Core (back as the café
   once it stopped doing Cozy Core's jobs), Spawn Gazebo, Nightfall Clock and Pocket List.
