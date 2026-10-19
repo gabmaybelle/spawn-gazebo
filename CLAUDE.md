@@ -55,9 +55,10 @@ it first, and add this session's row before ending.
 
 One job per mod, decided 2026-10-15, so nothing is done twice and each repo tells the same story:
 
-- **Cozy Core** (cozy-core): the builder rules, each an ordinary game rule: builds stay built (mob
-  explosions, endermen, fire), no phantoms, keep your hotbar on death, the Hearth Lantern, cheap
-  wood in the stonecutter, re-dyeing and builder trades. Fabric and NeoForge jars, plus a plain
+- **Cozy Core** (cozy-core): the Hearth Lantern, which makes the ground around it home: no
+  monsters or phantoms spawn there, and creeper and ghast blasts, fire and endermen leave its
+  blocks alone (each an ordinary game rule, with world-wide switches too); keep your hotbar on
+  death, cheap wood in the stonecutter, re-dyeing and builder trades. Fabric and NeoForge jars, plus a plain
   data pack of the recipes.
 - **Espresso Flavoured Core** (espresso-flavoured): the café: coffee you grow and brew, mugs,
   baristas, Bean Coins, the café charms, and Drowsy (coffee's reason to exist). Longer days stay a
