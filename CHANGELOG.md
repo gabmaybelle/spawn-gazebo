@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.3.2
 
 - **No gazebo on top of a gazebo.** `/spawngazebo build` now refuses to build where a gazebo already stands, the protected one or an older one, and says how far to move. Before, it put the new gazebo on the old one's roof and drove its stone foundation down through the old one.
 

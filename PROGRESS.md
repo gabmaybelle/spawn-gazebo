@@ -7,7 +7,7 @@ which checks fail, code put back), what was learned, and what was deliberately n
 ## Where things stand
 
 - **Done:** Spawn Gazebo 1.3.0 (Fabric and NeoForge; 1.2.0 released, 1.3.0 ready with /spawngazebo build for existing worlds): a round stone gazebo at the world spawn, a protected radius, a starter chest whose kit another mod can supply, lava near it set to stone; client game test (settings, a new world's gazebo, protection inside and outside the radius, Lootr), CI on every push.
-- **Broken:** Nothing known. The `/spawngazebo build` plinth bug found while filming (2026-10-19) is fixed on `main` and `1.21.1`, not released yet.
+- **Broken:** Nothing known.
 - **Next:** Nothing planned beyond feedback. Espresso Flavoured Core bundles it (jar-in-jar) and the Espresso Flavoured pack carries it as its own jar.
 
 ## Log
