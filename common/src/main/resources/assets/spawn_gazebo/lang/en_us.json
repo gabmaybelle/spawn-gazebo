@@ -21,5 +21,6 @@
   "spawn_gazebo.command.ask_confirm": "Type /spawngazebo build confirm within 30 seconds to build it.",
   "spawn_gazebo.command.nothing_to_confirm": "Nothing to confirm: run /spawngazebo build first, where you want the gazebo.",
   "spawn_gazebo.command.failed": "Couldn't build the gazebo here; the server log says why.",
-  "spawn_gazebo.command.built": "Built the gazebo; the world spawn is now in it (%s, %s, %s)."
+  "spawn_gazebo.command.built": "Built the gazebo; the world spawn is now in it (%s, %s, %s).",
+  "spawn_gazebo.command.moved": "The gazebo was built where you stood, so you've been moved up onto its floor."
 }

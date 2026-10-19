@@ -21,6 +21,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.permissions.PermissionSet;
+import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.ItemStack;
@@ -28,6 +29,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.gamerules.GameRules;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -130,7 +132,8 @@ final class SpawnGazeboClientTest {
 	/**
 	 * /spawngazebo build in a world that already has its gazebo: only operators, nothing until the
 	 * confirm, then a second gazebo where it was asked for, with the spawn and the protection moved
-	 * to it and its chest counted as claimed.
+	 * to it and its chest counted as claimed, and the operator who stood there lifted onto its floor
+	 * rather than left inside the plinth.
 	 */
 	private static void buildCommand() {
 		onServer("the build command", s -> {
@@ -139,7 +142,12 @@ final class SpawnGazeboClientTest {
 			BlockPos oldMiddle = level.getRespawnData().pos();
 			// 48 blocks east, well outside the first gazebo's protection.
 			BlockPos target = oldMiddle.offset(48, 0, 0);
-			CommandSourceStack op = s.createCommandSourceStack().withSuppressedOutput().withPosition(Vec3.atCenterOf(target));
+			// The operator stands on the ground there, where the plinth will go, as in a real world.
+			ServerPlayer player = s.getPlayerList().getPlayers().getFirst();
+			level.getChunk(target);
+			int surface = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, target.getX(), target.getZ());
+			player.teleportTo(target.getX() + 0.5, surface, target.getZ() + 0.5);
+			CommandSourceStack op = s.createCommandSourceStack().withSuppressedOutput().withEntity(player).withPosition(player.position());
 			CommandSourceStack notOp = op.withPermission(PermissionSet.NO_PERMISSIONS);
 			CommandNode<CommandSourceStack> node = s.getCommands().getDispatcher().getRoot().getChild("spawngazebo");
 			expect(failures, node != null && node.canUse(op), "operators can use /spawngazebo");
@@ -151,6 +159,16 @@ final class SpawnGazeboClientTest {
 			BlockPos newMiddle = level.getRespawnData().pos();
 			expect(failures, newMiddle.getX() == target.getX() && newMiddle.getZ() == target.getZ(),
 					"the world spawn moves into the new gazebo (it's at " + newMiddle + ", asked for " + target + ")");
+			BlockPos feet = player.blockPosition();
+			expect(failures, feet.equals(newMiddle) && Math.abs(Mth.wrapDegrees(player.getYRot() - level.getRespawnData().yaw())) < 0.01f,
+					"the operator who stood there is moved to the new spawn, facing out (at " + feet + " yaw " + player.getYRot() + ", spawn " + newMiddle + ")");
+			expect(failures, level.noCollision(player) && !level.getBlockState(feet.below()).isAir(),
+					"the operator stands on the gazebo's floor, not inside a block (feet in " + level.getBlockState(feet) + ")");
+			// Someone a block and a half past the edge of the gazebo stays where they are.
+			Vec3 outside = new Vec3(newMiddle.getX() + SpawnGazebo.HALF + 2.5, newMiddle.getY(), newMiddle.getZ() + 0.5);
+			player.teleportTo(outside.x, outside.y, outside.z);
+			GazeboCommand.liftPlayersOut(level, newMiddle);
+			expect(failures, player.position().equals(outside), "a player outside the gazebo isn't moved (now at " + player.position() + ")");
 			BoundingBox box = Platform.get().savedBox(level);
 			expect(failures, box != null && box.getCenter().getX() == target.getX() && box.getCenter().getZ() == target.getZ(),
 					"the world remembers the new gazebo's box (" + box + ")");
