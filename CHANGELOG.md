@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **No gazebo on top of a gazebo.** `/spawngazebo build` now refuses to build where a gazebo already stands, the protected one or an older one, and says how far to move. Before, it put the new gazebo on the old one's roof and drove its stone foundation down through the old one.
+
 ## 1.3.1
 
 - **Nobody gets built into the plinth.** When an operator builds a gazebo with `/spawngazebo build confirm`, anyone standing where it goes, usually the operator, is now moved up onto its floor at the new spawn, facing out of the entrance. Before, they were left inside the stone and could suffocate in survival. Players elsewhere stay where they are.

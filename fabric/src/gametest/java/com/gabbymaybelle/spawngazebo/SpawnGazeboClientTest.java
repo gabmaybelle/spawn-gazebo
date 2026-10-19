@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
+import java.util.List;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestDedicatedServerContext;
@@ -246,6 +247,17 @@ public class SpawnGazeboClientTest implements FabricClientGameTest {
 			expect(failures, spawn.getBooleanOr("chest", false) && spawn.getBooleanOr("claimed", false),
 					"the new chest is for the players already here, so newcomers get their own kit (" + spawn + ")");
 			expect(failures, GazeboCommand.confirm(op) == 0, "a second confirm builds nothing more");
+			// Asking where a gazebo already stands is refused, so nothing is built on its roof: in the
+			// protected one (the world remembers it) and in the old one (found by its copper dome).
+			for (BlockPos standing : List.of(newMiddle, oldMiddle)) {
+				player.teleportTo(standing.getX() + 0.5, standing.getY(), standing.getZ() + 0.5);
+				CommandSourceStack there = op.withPosition(player.position());
+				expect(failures, GazeboCommand.ask(there) == 0, "building is refused in the gazebo at " + standing);
+				expect(failures, GazeboCommand.confirm(there) == 0, "and there's nothing to confirm after the refusal at " + standing);
+				expect(failures, level.getRespawnData().pos().equals(newMiddle), "a refused build leaves the spawn where it was");
+			}
+			expect(failures, GazeboCommand.gazeboNear(level, newMiddle.getX() + 16, newMiddle.getZ()) == null,
+					"16 blocks from a gazebo, nothing is in the way");
 			return failures.toString();
 		});
 		check(result.isEmpty(), "the build command:" + result);
