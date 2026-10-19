@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **Nobody gets built into the plinth.** When an operator builds a gazebo with `/spawngazebo build confirm`, anyone standing where it goes, usually the operator, is now moved up onto its floor at the new spawn, facing out of the entrance. Before, they were left inside the stone and could suffocate in survival. Players elsewhere stay where they are.
+
 ## 1.3.0+1.21.1
 
 - **A gazebo in a world you already have.** An operator can stand where they want it and type `/spawngazebo build`. It says what it will do, and `/spawngazebo build confirm` within 30 seconds builds it there, in the local wood, with the starter chest if that setting is on. The world spawn and the protection move to the new gazebo; an older gazebo stays standing, unprotected. Players who join after that are each handed their own roll of the starter kit.

@@ -2,6 +2,7 @@ package com.gabbymaybelle.spawngazebo;
 
 import com.mojang.brigadier.CommandDispatcher;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import net.minecraft.commands.CommandSourceStack;
@@ -9,9 +10,11 @@ import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.phys.AABB;
 
 /**
  * {@code /spawngazebo build}, for operators: a gazebo in a world that already exists, centred where
@@ -79,9 +82,32 @@ public final class GazeboCommand {
 			source.sendFailure(Component.translatableWithFallback("spawn_gazebo.command.failed", "Couldn't build the gazebo here; the server log says why."));
 			return 0;
 		}
+		liftPlayersOut(level, middle);
 		BlockPos built = middle;
 		source.sendSuccess(() -> Component.translatableWithFallback("spawn_gazebo.command.built", "Built the gazebo; the world spawn is now in it (%s, %s, %s).", built.getX(), built.getY(), built.getZ()), true);
 		return 1;
+	}
+
+	/**
+	 * The gazebo was just built where people may be standing, usually the operator who asked for it:
+	 * anyone left inside its box (in the stone plinth, say) is moved to the new spawn on its floor,
+	 * facing out of the entrance. Players elsewhere stay where they are.
+	 */
+	static void liftPlayersOut(ServerLevel level, BlockPos middle) {
+		BoundingBox box = Platform.get().savedBox(level);
+		if (box == null) {
+			return;
+		}
+		AABB inside = AABB.of(box);
+		float yaw = level.getSharedSpawnAngle();
+		for (ServerPlayer player : List.copyOf(level.players())) {
+			if (!player.isSpectator() && player.getBoundingBox().intersects(inside)) {
+				player.stopRiding();
+				player.teleportTo(level, middle.getX() + 0.5, middle.getY(), middle.getZ() + 0.5, yaw, 0f);
+				player.resetFallDistance();
+				player.sendSystemMessage(Component.translatableWithFallback("spawn_gazebo.command.moved", "The gazebo was built where you stood, so you've been moved up onto its floor."));
+			}
+		}
 	}
 
 	private static UUID key(CommandSourceStack source) {
