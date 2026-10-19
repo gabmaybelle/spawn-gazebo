@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.3.1+1.21.1
 
 - **Nobody gets built into the plinth.** When an operator builds a gazebo with `/spawngazebo build confirm`, anyone standing where it goes, usually the operator, is now moved up onto its floor at the new spawn, facing out of the entrance. Before, they were left inside the stone and could suffocate in survival. Players elsewhere stay where they are.
 
