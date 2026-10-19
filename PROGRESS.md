@@ -7,7 +7,7 @@ which checks fail, code put back), what was learned, and what was deliberately n
 ## Where things stand
 
 - **Done:** Spawn Gazebo 1.2.0 (Fabric and NeoForge, released; on this branch 1.3.0+1.21.1 for Minecraft 1.21.1, ready, with /spawngazebo build): a round stone gazebo at the world spawn, a protected radius, a starter chest whose kit another mod can supply, lava near it set to stone; client game test (settings, a new world's gazebo, protection inside and outside the radius, Lootr), CI on every push.
-- **Broken:** Nothing known as of this writing (not re-verified).
+- **Broken:** Nothing known.
 - **Next:** Nothing planned beyond feedback. Espresso Flavoured Core bundles it (jar-in-jar) and the Espresso Flavoured pack carries it as its own jar.
 
 ## Log
