@@ -8,7 +8,7 @@ which checks fail, code put back), what was learned, and what was deliberately n
 
 - **Done:** Spawn Gazebo for Minecraft 26.3 (this branch) and 1.21.1 (the `1.21.1` branch), Fabric and NeoForge, every change so far released (versions: the GitHub releases): a round stone gazebo at the world spawn, a protected radius, a starter chest whose kit another mod can supply, lava near it set to stone, and `/spawngazebo build` for existing worlds (lifts anyone standing there onto the floor, refuses to build on top of a gazebo); client game test (settings, a new world's gazebo, protection inside and outside the radius, Lootr, the build command), CI on every push.
 - **Broken:** Nothing known.
-- **Next:** Nothing planned beyond feedback; a 1.20.1 version only if players ask for one. Espresso Flavoured Core bundles it (jar-in-jar).
+- **Next:** Nothing planned beyond feedback; a 1.20.1 version only if players ask for one.
 
 ## Log
 

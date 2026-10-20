@@ -36,11 +36,9 @@ it first, and add this session's row before ending.
 
 ## Gotchas
 
-- **Espresso Flavoured Core bundles this mod** (github.com/gabmaybelle/espresso-flavoured,
-  `libs/spawn-gazebo-<version>.jar`, jar-in-jar) and fills the chest with its own kit through
-  fabric.mod.json `custom.spawn_gazebo.starter_kit` (see `Config.starterKitTable`; on NeoForge a mod says it in neoforge.mods.toml `[modproperties.<its id>]` as `"spawn_gazebo:starter_kit" = "<loot table id>"`). After a
-  release here, copy the jar into Espresso's libs/ and bump the version there. Espresso's Seat
-  sits players on the benches, which is why the guard lets wooden stairs through with a tool in hand.
+- **Another mod can bundle this one** (jar-in-jar) and fill the chest with its own kit through
+  fabric.mod.json `custom.spawn_gazebo.starter_kit` (see `Config.starterKitTable`; on NeoForge a mod says it in neoforge.mods.toml `[modproperties.<its id>]` as `"spawn_gazebo:starter_kit" = "<loot table id>"`).
+  The guard lets wooden stairs through with a tool in hand, so a seat mod can sit players on the benches.
 - **Fabric worlds keep their gazebo.** Fabric stores whether a world was checked and where the gazebo is as attachments `spawn_gazebo` and `spawn_gazebo_box`; they must keep those ids, or an existing world would be given a second gazebo or lose its protection.
 - **One mixin differs by loader.** NeoForge's patched `FireBlock.checkBurnOut` takes an extra `Direction`, so `FireBlockMixin` has a copy in `fabric/` and one in `neoforge/` (each with its own mixin config). The game crashes on launch if a mixin doesn't match, and the NeoForge test is what caught this. Check the others when a Minecraft version changes.
 - **The structure files are generated.** Edit `tools/generate-spawn.js` and re-run
@@ -60,9 +58,6 @@ One job per mod, decided 2026-10-15, so nothing is done twice and each repo tell
   blocks alone (each an ordinary game rule, with world-wide switches too); keep your hotbar on
   death, cheap wood in the stonecutter, re-dyeing and builder trades. Fabric and NeoForge jars, plus a plain
   data pack of the recipes.
-- **Espresso Flavoured Core** (espresso-flavoured): the café: coffee you grow and brew, mugs,
-  baristas, Bean Coins, the café charms, and Drowsy (coffee's reason to exist). Longer days stay a
-  Core setting for now. The survival rules Cozy Core now covers left Core in 0.4.0 (its PLAN-0.4.0.md).
 - **Spawn Gazebo** (spawn-gazebo): the gazebo at the world spawn and its starter chest.
 - **Nightfall Clock** (nightfall-clock): the clock above the hotbar and the dusk warning.
 - **Pocket List** (pocket-list): the gathering checklist.
