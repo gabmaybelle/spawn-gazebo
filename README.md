@@ -1,6 +1,8 @@
 # Spawn Gazebo
 
-A Fabric and NeoForge mod for Minecraft 26.3. New worlds start in a little round stone gazebo instead of a random patch of grass.
+Every new world starts in a little round stone gazebo instead of a random patch of grass. It's built from the wood that grows nearest your spawn, with a starter chest, benches and lanterns, and survival players and creepers can't damage it.
+
+A Fabric and NeoForge mod for Minecraft 26.3 and 1.21.1. Download it from [CurseForge](https://www.curseforge.com/minecraft/mc-mods/spawn-gazebo), or [watch the tour](https://youtu.be/RPLnT72llCc).
 
 ![The gazebo in stone and oak, stone and spruce, and sandstone and jungle](docs/gazebo.png)
 
@@ -33,8 +35,9 @@ On a server, the server's settings file decides; players' own settings are greye
 Brand-new worlds get the gazebo by themselves. Worlds from before the mod keep their spawn as it is, until an operator asks for one:
 
 - Stand where you want the gazebo and type `/spawngazebo build`. It tells you what will happen: trees and blocks in a 15 by 15 area are cleared and built over, and the world spawn and the protection move to the new gazebo.
-- Type `/spawngazebo build confirm` within 30 seconds to build it. It's made of whatever wood grows nearby (sandstone in deserts), with the starter chest if that setting is on. Players who join after that are each handed their own roll of the starter kit.
-- A world has one protected gazebo. Building another leaves the old one standing as ordinary blocks. Removing the mod leaves the gazebo standing as ordinary blocks.
+- Type `/spawngazebo build confirm` within 30 seconds to build it. It's made of whatever wood grows nearby (sandstone in deserts), with the starter chest if that setting is on. Anyone standing where it goes is moved up onto its floor. Players who join after that are each handed their own roll of the starter kit.
+- It won't build where a gazebo already stands; it says how far to move instead.
+- A world has one protected gazebo. Building another elsewhere leaves the old one standing as ordinary blocks. Removing the mod leaves the gazebo standing as ordinary blocks.
 
 ## Requirements
 
