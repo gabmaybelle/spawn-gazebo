@@ -69,13 +69,6 @@ One job per mod, decided 2026-10-15, so nothing is done twice and each repo tell
 - **Pocket List** (pocket-list): the gathering checklist.
 - **Not Now, Shield** (not-now-shield): the shield drawn lower in first person; on 26.x also
   tools that change blocks while a shield is in the off-hand.
-- **Beyond the Dragon** (beyond-the-dragon): the end-game after the Ender Dragon: ruins at the
-  edge of the End, a dragon that comes back harder, and the aphelite metal.
-- **Espresso Flavoured** (espresso-flavoured-pack): the modpack that puts them together. Since
-  pack 0.5.0 (2026-10-15) it carries all five: Cozy Core, Espresso Flavoured Core (back as the café
-  once it stopped doing Cozy Core's jobs), Spawn Gazebo, Nightfall Clock and Pocket List.
-- **Cozy Core Pack** (cozy-core-pack): the builder-friendly modpack around Cozy Core, with Spawn
-  Gazebo, Nightfall Clock, Pocket List and Not Now, Shield.
 
 A new feature goes in the mod whose job it is. If none fits, ask Gabby before adding it anywhere.
 
@@ -94,7 +87,7 @@ computer and others in the cloud. These rules keep their work fitting together.
 the test, read its result (and the screenshot, for anything visual), then commit that one
 branch, then push it. A cherry-pick that conflicts stops the work until it is resolved by hand.
 A worldgen or balance change is tested on every terrain in the branch's matrix before it goes
-to any other branch. (Learned on Beyond the Dragon, 2026-10-14, when scripted chains committed
+to any other branch. (Learned on another mod, 2026-10-14, when scripted chains committed
 a conflicted cherry-pick, put one branch's files on another, and sent an untested ore change to
 all three branches.) For a Gradle game test use a game watcher that reports a verdict (in the world, error screen, crashed or hung),
 not a wait loop.
