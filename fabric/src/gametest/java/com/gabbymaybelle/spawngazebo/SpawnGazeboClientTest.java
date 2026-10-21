@@ -50,6 +50,10 @@ import net.minecraft.world.phys.Vec3;
 public class SpawnGazeboClientTest implements FabricClientGameTest {
 	@Override
 	public void runTest(ClientGameTestContext ctx) {
+		// A filming run films only.
+		if (Film.on("spawngazebo")) {
+			return;
+		}
 		settingsFile();
 		titleScreenSettings(ctx);
 		try (TestSingleplayerContext world = ctx.worldBuilder().create()) {

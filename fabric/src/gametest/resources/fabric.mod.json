@@ -7,7 +7,8 @@
 	"entrypoints": {
 		"fabric-client-gametest": [
 			"com.gabbymaybelle.spawngazebo.SpawnGazeboClientTest",
-			"com.gabbymaybelle.spawngazebo.VideoTour"
+			"com.gabbymaybelle.spawngazebo.VideoTour",
+			"com.gabbymaybelle.spawngazebo.ArrivalShort"
 		]
 	},
 	"depends": {

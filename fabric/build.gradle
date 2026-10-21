@@ -58,16 +58,18 @@ fabricApi {
 	}
 }
 
-// `./gradlew :fabric:runClientGameTest -PvideoTour` also films the listing video and the Short (VideoTour),
-// frames in build/run/clientGameTest/video_tour; `-PvideoSeed=<seed>` picks the world and
-// `-PvideoScenes=<scene,scene>` films only those scenes. Without
-// -PvideoTour the game test runs as usual.
+// `./gradlew :fabric:runClientGameTest -PvideoTour` also films the listing video and the first Short
+// (VideoTour), frames in build/run/clientGameTest/video_tour; `-PvideoSeed=<seed>` picks the world and
+// `-PvideoScenes=<scene,scene>` films only those scenes. With `-PvideoShort2` it films the second
+// Short instead (ArrivalShort), which also takes `-PvideoScout` (one still at each scene's start and
+// end) and `-PvideoSkin=<png>` (the player's skin). Without -PvideoTour the game test runs as usual.
 if (project.hasProperty("videoTour")) {
 	tasks.matching { it.name == 'runClientGameTest' }.configureEach {
 		systemProperty 'spawngazebo.videoTour', 'true'
-		for (name in ['videoSeed', 'videoScenes']) {
-			if (project.hasProperty(name)) {
-				systemProperty "spawngazebo.${name}", project.property(name).toString()
+		project.properties.each { name, value ->
+			if (name.startsWith('video') && name != 'videoTour') {
+				// A bare flag (-PvideoScout) arrives empty: pass it on as true.
+				systemProperty "spawngazebo.${name}", value.toString().isEmpty() ? 'true' : value.toString()
 			}
 		}
 	}
