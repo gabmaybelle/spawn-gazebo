@@ -81,7 +81,8 @@ public class VideoTour implements FabricClientGameTest {
 
 	static boolean enabled() {
 		// -PvideoShort2 films the second Short (ArrivalShort) instead.
-		return Boolean.getBoolean("spawngazebo.videoTour") && !Boolean.getBoolean("spawngazebo.videoShort2");
+		return Boolean.getBoolean("spawngazebo.videoTour") && !Boolean.getBoolean("spawngazebo.videoShort2") && !Boolean.getBoolean("spawngazebo.videoShort3")
+				&& !Boolean.getBoolean("spawngazebo.videoListing");
 	}
 
 	@Override

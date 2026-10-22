@@ -30,6 +30,8 @@ import net.minecraft.world.phys.Vec3;
  * screen closes (26.3 has no fade-in; the land further out may still be drawing in). Runs only with
  * {@code ./gradlew :fabric:runClientGameTest -PvideoTour -PvideoShort2}; the kit's other -Pvideo...
  * flags work too ({@code -PvideoScout}, {@code -PvideoScenes=s_cherry}, {@code -PvideoSkin=<png>}).
+ * With {@code -PvideoShort3} instead, it films the third Short's arrivals (the {@code b_} scenes), and
+ * with {@code -PvideoListing} the new listing video, wide (the {@code l_} scenes).
  */
 public class ArrivalShort implements FabricClientGameTest {
 	private static final String PREFIX = "spawngazebo";
@@ -45,11 +47,41 @@ public class ArrivalShort implements FabricClientGameTest {
 	private static final Arrival DESERT = new Arrival("spawn gazebo 62", List.of("desert"), "acacia", "sand");
 	private static final Arrival LOOP = new Arrival("spawn gazebo 65", List.of("flower_forest"), "oak", "stone");
 
+	/*
+	 * The third Short, "Every biome, its own wood" (1.3.3; plan: mods-media spawn-gazebo/SHORT-3-PLAN.md),
+	 * with -PvideoShort3. Seeds from the local seed search (vanilla 26.3, spawn biome and logs within
+	 * 32 blocks, 2026-10-22). The snowy plains and jagged peaks spawns have no logs in reach, so their
+	 * spruce comes from 1.3.3's biome rule (it was oak before); in the dense biomes the most common log
+	 * picks the wood, so "?" there only notes what was built. Cherry, birch and the desert reuse the
+	 * second Short's seeds.
+	 */
+	private static final Arrival SNOW = new Arrival("3895077614665434", List.of("snowy_plains"), "spruce", "stone");
+	private static final Arrival PEAKS = new Arrival("-174844684682212", List.of("jagged_peaks"), "spruce", "stone");
+	private static final Arrival ICE = new Arrival("-1724565193745728", List.of("ice_spikes"), "spruce", "stone");
+	private static final Arrival DARK = new Arrival("3130446092417740", List.of("dark_forest"), "?", "stone");
+	private static final Arrival BAMBOO = new Arrival("2130050567421042", List.of("bamboo_jungle"), "?", "stone");
+	/** Another snowy arrival to close on, so a replay reads as one more new world. */
+	private static final Arrival SNOW_LOOP = new Arrival("-1392159651655218", List.of("snowy_plains"), "?", "stone");
+
 	private Film film;
 	private ClientGameTestContext ctx;
 
 	static boolean enabled() {
-		return Film.on(PREFIX) && Boolean.getBoolean(PREFIX + ".videoShort2");
+		return Film.on(PREFIX) && (Boolean.getBoolean(PREFIX + ".videoShort2") || Boolean.getBoolean(PREFIX + ".videoShort3")
+				|| Boolean.getBoolean(PREFIX + ".videoListing"));
+	}
+
+	private static boolean listing() {
+		return Boolean.getBoolean(PREFIX + ".videoListing");
+	}
+
+	/** The frame: tall for the Shorts, wide for the listing video. */
+	private void frame() {
+		if (listing()) {
+			film.window(1920, 1080, 3);
+		} else {
+			film.window(1080, 1920, 3);
+		}
 	}
 
 	@Override
@@ -59,16 +91,35 @@ public class ArrivalShort implements FabricClientGameTest {
 		}
 		ctx = context;
 		film = new Film(context, PREFIX, "video_tour");
-		// Tall from the title screen on, so every new world opens in the Short's own frame.
-		film.window(1080, 1920, 3);
+		// From the title screen on, so every new world opens in the video's own frame.
+		frame();
 		film.take(() -> create(HOME.seed()), () -> { }, this::scenes);
 	}
 
 	private void scenes() {
-		film.window(1080, 1920, 3);
+		frame();
 		// Minimal particles, as a player filming would set them: a spore from the gazebo's blossom
 		// drifting past the eye filled a quarter of the tall frame in the first scout.
 		ctx.runOnClient(mc -> mc.options.particles().set(ParticleStatus.MINIMAL));
+		if (listing()) {
+			listingScenes();
+			return;
+		}
+		if (Boolean.getBoolean(PREFIX + ".videoShort3")) {
+			// The third Short: arrivals only, one world after another. The snowy opening is long (it
+			// carries what 1.3.3 changed); the montage worlds a second each, turning a little.
+			// A small turn, looking down a little at the snow out of the arch (take 5 swung to the chest and the sky).
+			film.scene("b_snow", () -> arrive(SNOW, 64, 10, -4, 4, 9));
+			film.scene("b_ice", () -> arrive(ICE, 24, 14, -6, -6, -2));
+			film.scene("b_peaks", () -> arrive(PEAKS, 24, -14, 6, -6, -2));
+			film.scene("b_dark", () -> arrive(DARK, 24, 14, -6, -6, -2));
+			film.scene("b_bamboo", () -> arrive(BAMBOO, 24, -14, 6, -6, -2));
+			film.scene("b_cherry", () -> arrive(CHERRY, 24, -14, 6, -6, -2));
+			film.scene("b_birch", () -> arrive(BIRCH, 24, 14, -6, -6, -2));
+			film.scene("b_desert", () -> arrive(DESERT, 24, -14, 6, -6, -2));
+			film.scene("b_loop", () -> arrive(SNOW_LOOP, 60, -10, 4, 4, 9));
+			return;
+		}
 		if (film.scouting()) {
 			film.scene("x_set_home", this::setHome);
 		}
@@ -81,6 +132,49 @@ public class ArrivalShort implements FabricClientGameTest {
 		film.scene("s_birch", () -> arrive(BIRCH, 22, 14, -6, -6, -2));
 		film.scene("s_desert", () -> arrive(DESERT, 22, -14, 6, -6, -2));
 		film.scene("s_loop", () -> arrive(LOOP, 76, -24, 4, -7, -2));
+	}
+
+	/**
+	 * The listing video "First steps" (1.3.3; plan: mods-media spawn-gazebo/LISTING-VIDEO-PLAN.md), wide:
+	 * a snowy arrival that turns out through the arch, a world a second in other biomes, the starter
+	 * chest, a creeper at dusk that can't hurt the gazebo, and the morning rising over it for the end
+	 * card. The home world's scenes come first, since each arrival makes its own new world; the
+	 * assembler puts them in running order.
+	 */
+	private void listingScenes() {
+		if (film.scouting()) {
+			film.scene("x_set_home", this::setHome);
+		}
+		film.scene("l_chest", this::chest);
+		film.scene("l_creeper", this::creeper);
+		film.scene("l_morning", this::morning);
+		// The opening is long and turns wider than the Short's, so the wide frame sweeps out of the arch.
+		film.scene("l_snow", () -> arrive(SNOW, 100, 24, -6, 4, 8));
+		film.scene("l_cherry", () -> arrive(CHERRY, 28, -14, 6, -6, -2));
+		film.scene("l_desert", () -> arrive(DESERT, 28, -14, 6, -6, -2));
+		film.scene("l_dark", () -> arrive(DARK, 28, 14, -6, -6, -2));
+		film.scene("l_bamboo", () -> arrive(BAMBOO, 28, -14, 6, -6, -2));
+		film.scene("l_ice", () -> arrive(ICE, 28, 14, -6, -6, -2));
+		film.scene("l_birch", () -> arrive(BIRCH, 28, 14, -6, -6, -2));
+	}
+
+	/**
+	 * Morning at the home gazebo, from a spectator camera: it starts low by the entrance and rises and
+	 * pulls back over the dome until the new world around it shows, with room for the end card.
+	 */
+	private void morning() {
+		film.hud(false);
+		film.spectator();
+		film.server.runCommand("time set 1000");
+		Film.Spot home = home();
+		Vec3 look = home.at(0, 0, 3);
+		Vec3 from = home.at(9, 2, 2.5), to = home.at(26, 9, 14);
+		film.camera(from, look);
+		ctx.waitTicks(20);
+		film.dolly(140, from, to, look, home.at(0, 0, 4));
+		boolean standing = film.server.computeOnServer(s -> !s.overworld().getBlockState(s.overworld().getRespawnData().pos().below()).isAir());
+		film.note("morning", "gazebo floor under the spawn " + standing);
+		Film.check(standing, "the gazebo stands at the spawn");
 	}
 
 	// ------------------------------------------------------------------ the worlds
@@ -119,8 +213,12 @@ public class ArrivalShort implements FabricClientGameTest {
 		film.server.runCommand("gamerule send_command_feedback false");
 		film.server.runCommand("tick rate " + film.prop("videoTickRate", "10"));
 		// The cherry and loop gazebos stand below a slope; they look out the open way (take 1's loop faced a bank).
+		// The third Short's dark forest looked out to sea and its peaks gazebo at a rock wall: they face
+		// the dark oaks and the most open snowy view instead (take 2, 2026-10-22).
 		float spawnYaw = a.wood().equals("cherry") ? towardsLeaves("cherry_leaves")
 				: a == LOOP ? towardsLeaves("oak_leaves")
+				: a == DARK ? towardsLeaves("dark_oak_leaves")
+				: a == PEAKS || a == SNOW || a == SNOW_LOOP ? towardsLeaves("snow")
 				: film.server.computeOnServer(s -> s.overworld().getRespawnData().yaw());
 		film.log("arrive", a.seed());
 		for (int i = 0; i < frames; i++) {
@@ -137,7 +235,9 @@ public class ArrivalShort implements FabricClientGameTest {
 		if (!a.biomes().contains("?")) {
 			Film.check(a.biomes().contains(got[0]), a.seed() + " spawns in " + a.biomes() + " (it is " + got[0] + ")");
 		}
-		Film.check(got[1].equals(a.wood()), a.seed() + "'s gazebo has " + a.wood() + " pillars (they are " + got[1] + ")");
+		if (!a.wood().equals("?")) {
+			Film.check(got[1].equals(a.wood()), a.seed() + "'s gazebo has " + a.wood() + " pillars (they are " + got[1] + ")");
+		}
 		Film.check(got[2].equals(a.palette()), a.seed() + "'s gazebo is " + a.palette() + " (it is " + got[2] + ")");
 		BlockPos middle = film.server.computeOnServer(s -> s.overworld().getRespawnData().pos());
 		Vec3 woke = ctx.computeOnClient(mc -> mc.player.position());

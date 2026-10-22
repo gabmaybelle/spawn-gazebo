@@ -1,6 +1,6 @@
 """Builds the Short or the listing video from VideoTour's frames.
 
-python assemble.py short|wide <video_tour dir> <sounds dir> <out dir>
+python assemble.py short|wide|listing <video_tour dir> <sounds dir> <out dir>
 (sounds from get_sounds.py; set CAPTION_FONT to a heavy font file if none of the usual ones is found)
 
 short: spawn-gazebo-short.mp4 (game sounds), spawn-gazebo-short-silent.mp4 and
@@ -13,7 +13,7 @@ Captions are bold white capitals with a black outline straight on the footage, o
 A small Spawn Gazebo badge stays in one place all the way through. If a scene changes in VideoTour,
 change its caption here too.
 """
-import csv, os, random, shutil, subprocess, sys
+import csv, json, os, random, shutil, subprocess, sys
 from PIL import Image, ImageDraw, ImageFont
 
 mode, frames_dir, sounds_dir, out = sys.argv[1:5]
@@ -50,8 +50,28 @@ elif mode == 'wide':
         ('w_closing', 0, None, None, 0),
     ]
     BADGE_BOX = (40, 40, 480, 130)
+elif mode == 'listing':
+    # The listing video "First steps" (1.3.3; plan: mods-media spawn-gazebo/LISTING-VIDEO-PLAN.md), from
+    # ArrivalShort's -PvideoListing frames: no captions or badge (her voice carries it, laid on after with
+    # add_voice.py), the end card over the morning's last frames. Frame ranges are guesses until the take.
+    W, H, SIZE, STROKE, LEAD = 1920, 1080, 64, 6, 80
+    NAME = 'spawn-gazebo-listing'
+    SCENES = [
+        ('l_snow', 0, None, None, 0),
+        ('l_cherry', 0, None, None, 0),
+        ('l_desert', 0, None, None, 0),
+        ('l_dark', 0, None, None, 0),
+        ('l_bamboo', 0, None, None, 0),
+        ('l_ice', 0, None, None, 0),
+        ('l_birch', 0, None, None, 0),
+        ('l_chest', 0, None, None, 0),
+        ('l_creeper', 0, None, None, 0),
+        ('l_morning', 0, None, None, 0),
+    ]
+    BADGE_BOX = (40, 40, 480, 130)
+    END = ['Spawn *Gazebo*', 'Fabric and NeoForge, Minecraft 26.3 and 1.21.1', 'Search "Spawn Gazebo" on CurseForge']
 else:
-    sys.exit('mode is short or wide')
+    sys.exit('mode is short, wide or listing')
 
 FONTS = [os.environ.get('CAPTION_FONT', ''), 'C:/Windows/Fonts/ariblk.ttf', '/usr/share/fonts/truetype/msttcorefonts/Arial_Black.ttf',
          '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf']
@@ -66,7 +86,10 @@ def font(paths, size):
 
 
 def run(*args):
-    subprocess.run(args, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+    # -nostdin: run in the background, ffmpeg otherwise sits waiting for keyboard input (2026-10-22).
+    if args[0] == 'ffmpeg':
+        args = ('ffmpeg', '-nostdin') + args[1:]
+    subprocess.run(args, check=True, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
 
 
 CAPTION = font(FONTS, SIZE)
@@ -103,7 +126,27 @@ def badge():
     return layer
 
 
-BADGE = badge()
+BADGE = badge() if mode != 'listing' else None
+
+
+def end_card():
+    """The listing video's close: darkened footage with the icon, the name, where it runs and where to find it."""
+    layer = Image.new('RGBA', (W, H), (0, 0, 0, 120))
+    icon = Image.open(os.path.join(repo, 'common/src/main/resources/assets/spawn_gazebo/icon.png')).convert('RGBA')
+    layer.alpha_composite(icon.resize((200, 200), Image.LANCZOS), ((W - 200) // 2, 170))
+    d = ImageDraw.Draw(layer)
+    for i, (line, face, stroke, y) in enumerate(((END[0], font(FONTS, 96), 8, 400), (END[1], font(BADGE_FONTS, 50), 4, 540),
+                                                 (END[2], font(BADGE_FONTS, 50), 4, 606))):
+        parts = [(p, COPPER if k % 2 else (255, 255, 255)) for k, p in enumerate(line.split('*')) if p]
+        x = (W - sum(d.textlength(p, font=face) for p, _ in parts)) / 2
+        for text, colour in parts:
+            d.text((x, y), text, font=face, fill=colour, stroke_width=stroke, stroke_fill=(0, 0, 0))
+            x += d.textlength(text, font=face)
+    return layer
+
+
+END_CARD = end_card() if mode == 'listing' else None
+END_FRAMES = 90  # the end card fades in over the last scene's last frames
 
 # A Minecraft-ish pixel arrow, drawn at 3x.
 ARROW = ["2", "22", "212", "2112", "21112", "211112", "2111112", "21111112", "211111112", "2111112222",
@@ -148,7 +191,13 @@ for scene, first, last, lines, top in SCENES:
         x, y = cursor_at.get((scene, n), ('-', '-'))
         if x != '-':
             img.alpha_composite(cursor, (int(int(x) * sx), int(int(y) * sy)))
-        img.alpha_composite(BADGE)
+        if BADGE is not None:
+            img.alpha_composite(BADGE)
+        if END_CARD is not None and scene == SCENES[-1][0] and i >= (end - first) - END_FRAMES:
+            a = min(1.0, (i - (end - first - END_FRAMES) + 1) / 12)
+            layer = END_CARD.copy()
+            layer.putalpha(layer.getchannel('A').point(lambda v: int(v * a)))
+            img.alpha_composite(layer)
         if cap is not None:
             a = min(1.0, (i + 1) / FADE_IN)
             layer = cap.copy()
@@ -220,13 +269,18 @@ run('ffmpeg', '-y', *inputs, '-filter_complex', ';'.join(filters), '-map', '[a]'
 run('ffmpeg', '-y', '-i', silent, '-i', audio, '-map', '0:v', '-map', '1:a', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '160k',
     '-shortest', '-movflags', '+faststart', os.path.join(out, NAME + '.mp4'))
 
+# Each scene's start, for add_voice.py's cues.
+with open(os.path.join(out, NAME + '-timeline.json'), 'w') as f:
+    json.dump(dict(starts, total=total), f, indent=1)
+
 # The thumbnail: the gazebo from the first scene, with the mod's name large.
 # The video's from the warm closing shot, the name on one line in the sky; the Short's from its
 # opening shot, the name on two lines above the dome.
-opener = SCENES[0][0] if mode == 'short' else 'w_closing'
-tw, th = (1280, 720) if mode == 'wide' else (1080, 1920)
-lines = [[('SPAWN ', (255, 255, 255)), ('GAZEBO', COPPER)]] if mode == 'wide' else [[('SPAWN', (255, 255, 255))], [('GAZEBO', COPPER)]]
-size, top = (104, 34) if mode == 'wide' else (150, 300)
+opener = SCENES[0][0] if mode == 'short' else 'l_morning' if mode == 'listing' else 'w_closing'
+wide = mode in ('wide', 'listing')
+tw, th = (1280, 720) if wide else (1080, 1920)
+lines = [[('SPAWN ', (255, 255, 255)), ('GAZEBO', COPPER)]] if wide else [[('SPAWN', (255, 255, 255))], [('GAZEBO', COPPER)]]
+size, top = (104, 34) if wide else (150, 300)
 # A clean frame without the caption, from the raw footage, then the name.
 raw =sorted(n for n in os.listdir(frames_dir) if n.startswith(opener + '_'))
 thumb = Image.open(os.path.join(frames_dir, raw[len(raw) * 2 // 3])).convert('RGBA').resize((tw, th), Image.LANCZOS)

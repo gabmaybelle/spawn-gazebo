@@ -37,6 +37,25 @@ SCENES = [
 ]
 # Captions that carry on from the scene before don't fade in again.
 CARRIED = {'s_birch', 's_desert'}
+# The third Short, "Every biome, its own wood" (1.3.3; plan: mods-media spawn-gazebo/SHORT-3-PLAN.md),
+# from ArrivalShort's -PvideoShort3 frames: `python assemble_short2.py <frames> <sounds> <out> short3`.
+# A treeless snowy spawn (its spruce is what 1.3.3 changed) under the promise, then a world a second
+# showing each biome gets a gazebo that fits (Gabby, 2026-10-22: a promise first, not "no trees?"), then one more
+# snowy arrival for the loop.
+if len(sys.argv) > 4 and sys.argv[4] == 'short3':
+    NAME = 'spawn-gazebo-short-3'
+    SCENES = [
+        ('b_snow', 0, None, ['EVERY NEW WORLD', 'STARTS *HERE*'], 520),
+        ('b_ice', 0, None, ['MATCHES *EVERY*', 'BIOME'], 520),
+        ('b_peaks', 0, None, ['MATCHES *EVERY*', 'BIOME'], 520),
+        ('b_dark', 0, None, ['MATCHES *EVERY*', 'BIOME'], 520),
+        ('b_bamboo', 0, None, ['MATCHES *EVERY*', 'BIOME'], 520),
+        ('b_cherry', 0, None, ['MATCHES *EVERY*', 'BIOME'], 520),
+        ('b_birch', 0, None, ['MATCHES *EVERY*', 'BIOME'], 520),
+        ('b_desert', 0, None, ['MATCHES *EVERY*', 'BIOME'], 520),
+        ('b_loop', 0, None, ['FOLLOW FOR MORE', '*COZY* MODS'], 1100),
+    ]
+    CARRIED = {'b_peaks', 'b_dark', 'b_bamboo', 'b_cherry', 'b_birch', 'b_desert'}
 BADGE_BOX = (40, 250, 520, 350)
 
 FONTS = [os.environ.get('CAPTION_FONT', ''), 'C:/Windows/Fonts/ariblk.ttf', '/usr/share/fonts/truetype/msttcorefonts/Arial_Black.ttf',
@@ -177,12 +196,16 @@ for i, (at, sound, pitch, volume) in enumerate(cues):
 mix = ''.join(f'[s{i}]' for i in range(len(cues)))
 filters.append(f'{mix}amix=inputs={len(cues)}:normalize=0,apad=whole_dur={total:.3f}[a]')
 audio = os.path.join(work, 'sound.wav')
-run('ffmpeg', '-y', *inputs, '-filter_complex', ';'.join(filters), '-map', '[a]', '-t', f'{total:.3f}', audio)
+if cues:
+    run('ffmpeg', '-y', *inputs, '-filter_complex', ';'.join(filters), '-map', '[a]', '-t', f'{total:.3f}', audio)
+else:
+    # Arrivals only (the third Short): no game sound to place, so a quiet track for the music to sit on.
+    run('ffmpeg', '-y', '-f', 'lavfi', '-i', 'anullsrc=r=44100:cl=stereo', '-t', f'{total:.3f}', audio)
 run('ffmpeg', '-y', '-i', silent, '-i', audio, '-map', '0:v', '-map', '1:a', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '160k',
     '-shortest', '-movflags', '+faststart', os.path.join(out, NAME + '.mp4'))
 
 # The thumbnail: the opening arrival, looking out of the arch, with the mod's name large.
-raw = sorted(n for n in os.listdir(frames_dir) if n.startswith('s_arrive_'))
+raw = sorted(n for n in os.listdir(frames_dir) if n.startswith(SCENES[0][0] + '_'))
 thumb = Image.open(os.path.join(frames_dir, raw[len(raw) * 3 // 4])).convert('RGBA').resize((W, H), Image.LANCZOS)
 d = ImageDraw.Draw(thumb)
 size, top = 150, 300
