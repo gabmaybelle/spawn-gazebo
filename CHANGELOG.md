@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.3.3
 
 - **The right wood even with no trees in sight.** When nothing grows near the spawn, the gazebo now takes the wood its biome is known for: spruce on snowy plains, ice spikes, frozen peaks and snowy beaches, cherry in a cherry grove, pale oak in a pale garden, mangrove in a mangrove swamp, bamboo in a bamboo jungle, birch in a birch forest and dark oak in a dark forest. Before, all of these got oak.
 
