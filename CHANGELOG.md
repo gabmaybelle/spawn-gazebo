@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **The right wood even with no trees in sight.** When nothing grows near the spawn, the gazebo now takes the wood its biome is known for: spruce on snowy plains, ice spikes, frozen peaks and snowy beaches, cherry in a cherry grove, mangrove in a mangrove swamp, bamboo in a bamboo jungle, birch in a birch forest and dark oak in a dark forest. Before, all of these got oak.
+
 ## 1.3.2+1.21.1
 
 - **No gazebo on top of a gazebo.** `/spawngazebo build` now refuses to build where a gazebo already stands, the protected one or an older one, and says how far to move. Before, it put the new gazebo on the old one's roof and drove its stone foundation down through the old one.

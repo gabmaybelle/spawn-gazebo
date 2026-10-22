@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import com.gabbymaybelle.spawngazebo.harness.ClientGameTest;
 import com.gabbymaybelle.spawngazebo.harness.ClientGameTestContext;
 import com.gabbymaybelle.spawngazebo.harness.TestServerContext;
@@ -21,7 +23,9 @@ import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -31,6 +35,8 @@ import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.util.Mth;
@@ -70,6 +76,7 @@ public class SpawnGazeboClientTest implements ClientGameTest {
 			int radius = world.getServer().computeOnServer(server -> server.overworld().getGameRules().getInt(GameRules.RULE_SPAWN_RADIUS));
 			check(radius == 0, "building the gazebo sets the spawn radius to 0 (got " + radius + ")");
 			ctx.takeScreenshot("spawn_gazebo_new_world");
+			treelessWoods(world.getServer());
 			protection(world.getServer());
 			buildCommand(world.getServer());
 			ctx.takeScreenshot("spawn_gazebo_built_by_command");
@@ -300,6 +307,34 @@ public class SpawnGazeboClientTest implements ClientGameTest {
 		player.setItemInHand(InteractionHand.MAIN_HAND, stack);
 		BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(pos).add(0, 0.5, 0), Direction.UP, pos, false);
 		return UseBlockCallback.EVENT.invoker().interact(player, level, InteractionHand.MAIN_HAND, hit);
+	}
+
+	/** With no trees near spawn, the gazebo is built in the wood its biome is known for. */
+	private static void treelessWoods(TestServerContext server) {
+		String result = server.computeOnServer(s -> {
+			Map<ResourceKey<Biome>, String> expected = new LinkedHashMap<>();
+			expected.put(Biomes.SNOWY_PLAINS, "spruce");
+			expected.put(Biomes.ICE_SPIKES, "spruce");
+			expected.put(Biomes.SNOWY_BEACH, "spruce");
+			expected.put(Biomes.CHERRY_GROVE, "cherry");
+			expected.put(Biomes.MANGROVE_SWAMP, "mangrove");
+			expected.put(Biomes.BAMBOO_JUNGLE, "bamboo");
+			expected.put(Biomes.BIRCH_FOREST, "birch");
+			expected.put(Biomes.DARK_FOREST, "dark_oak");
+			expected.put(Biomes.TAIGA, "spruce");
+			expected.put(Biomes.JUNGLE, "jungle");
+			expected.put(Biomes.SAVANNA, "acacia");
+			expected.put(Biomes.DESERT, "jungle");
+			expected.put(Biomes.PLAINS, "oak");
+			expected.put(Biomes.MEADOW, "oak");
+			StringBuilder failures = new StringBuilder();
+			expected.forEach((biome, wood) -> {
+				String got = SpawnGazebo.biomeWood(s.registryAccess().registryOrThrow(Registries.BIOME).getHolderOrThrow(biome));
+				expect(failures, got.equals(wood), biome.location().getPath() + " gets " + wood + " (got " + got + ")");
+			});
+			return failures.toString();
+		});
+		check(result.isEmpty(), "the wood for a treeless spawn:" + result);
 	}
 
 	private static void expect(StringBuilder failures, boolean ok, String what) {

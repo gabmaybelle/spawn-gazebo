@@ -24,6 +24,7 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.ChestBlock;
@@ -71,6 +72,7 @@ public final class SpawnGazebo {
 			"mangrove", "cherry", "bamboo");
 	private static final TagKey<Biome> C_IS_DESERT = TagKey.create(Registries.BIOME, ResourceLocation.fromNamespaceAndPath("c", "is_desert"));
 	private static final TagKey<Biome> C_IS_BADLANDS = TagKey.create(Registries.BIOME, ResourceLocation.fromNamespaceAndPath("c", "is_badlands"));
+	private static final TagKey<Biome> C_IS_SNOWY = TagKey.create(Registries.BIOME, ResourceLocation.fromNamespaceAndPath("c", "is_snowy"));
 
 	private SpawnGazebo() {
 	}
@@ -393,8 +395,26 @@ public final class SpawnGazebo {
 		return WOODS.contains(wood) ? wood : null;
 	}
 
-	private static String biomeWood(Holder<Biome> biome) {
-		if (biome.is(BiomeTags.IS_TAIGA)) {
+	/** The wood a spawn with no trees nearby gets: the tree its biome is known for. */
+	static String biomeWood(Holder<Biome> biome) {
+		if (biome.is(Biomes.CHERRY_GROVE)) {
+			return "cherry";
+		}
+		if (biome.is(Biomes.MANGROVE_SWAMP)) {
+			return "mangrove";
+		}
+		if (biome.is(Biomes.BAMBOO_JUNGLE)) {
+			return "bamboo";
+		}
+		if (biome.is(Biomes.BIRCH_FOREST) || biome.is(Biomes.OLD_GROWTH_BIRCH_FOREST)) {
+			return "birch";
+		}
+		if (biome.is(Biomes.DARK_FOREST)) {
+			return "dark_oak";
+		}
+		if (biome.is(BiomeTags.IS_TAIGA) || biome.is(C_IS_SNOWY) || biome.is(Biomes.SNOWY_PLAINS) || biome.is(Biomes.ICE_SPIKES)
+				|| biome.is(Biomes.SNOWY_SLOPES) || biome.is(Biomes.FROZEN_PEAKS) || biome.is(Biomes.JAGGED_PEAKS) || biome.is(Biomes.GROVE)
+				|| biome.is(Biomes.SNOWY_BEACH)) {
 			return "spruce";
 		}
 		if (biome.is(BiomeTags.IS_JUNGLE)) {
