@@ -53,7 +53,8 @@ elif mode == 'wide':
 elif mode == 'listing':
     # The listing video "First steps" (1.3.3; plan: mods-media spawn-gazebo/LISTING-VIDEO-PLAN.md), from
     # ArrivalShort's -PvideoListing frames: no captions or badge (her voice carries it, laid on after with
-    # add_voice.py), the end card over the morning's last frames. Frame ranges are guesses until the take.
+    # add_voice.py), the end card over the morning's last frames. Frame ranges from take 02 (2026-10-22): the
+    # chest screen is open from frame 18 to 101, so the cut keeps its first half.
     W, H, SIZE, STROKE, LEAD = 1920, 1080, 64, 6, 80
     NAME = 'spawn-gazebo-listing'
     SCENES = [
@@ -64,7 +65,7 @@ elif mode == 'listing':
         ('l_bamboo', 0, None, None, 0),
         ('l_ice', 0, None, None, 0),
         ('l_birch', 0, None, None, 0),
-        ('l_chest', 0, None, None, 0),
+        ('l_chest', 0, 90, None, 0),
         ('l_creeper', 0, None, None, 0),
         ('l_morning', 0, None, None, 0),
     ]
