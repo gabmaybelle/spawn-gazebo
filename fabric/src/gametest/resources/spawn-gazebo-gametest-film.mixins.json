@@ -1,0 +1,11 @@
+{
+	"required": true,
+	"package": "com.gabbymaybelle.spawngazebo.filmmixin",
+	"compatibilityLevel": "JAVA_25",
+	"client": [
+		"FilmCameraMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

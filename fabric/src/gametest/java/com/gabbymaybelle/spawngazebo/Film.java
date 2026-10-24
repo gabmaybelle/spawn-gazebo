@@ -113,6 +113,11 @@ public final class Film {
 	private int frame;
 	/** Where the camera is meant to look, for the "something in front" check on a scene's first frame. */
 	private Vec3 target;
+	/**
+	 * What the scene is about (a chest, a cairn, a creeper), checked every frame: a block or the player
+	 * between it and the camera flags the frame. Set with {@link #subject}; cleared at each scene's start.
+	 */
+	private Vec3 subject;
 	/** True while {@link #type} has chat open on purpose, so it isn't flagged. */
 	private boolean typing;
 
@@ -435,6 +440,7 @@ public final class Film {
 		scene = name;
 		frame = 0;
 		target = null;
+		subject = null;
 		immediate = false;
 		try {
 			body.run();
@@ -590,7 +596,58 @@ public final class Film {
 				}
 			}
 		}
+		// Every frame, from where the camera really is (in third person it sits behind the player): is
+		// the player in view, and is the subject? Four chest takes in a row hid the chest behind her and
+		// only the stills showed it (2026-10-23).
+		Vec3 cam = mc.gameRenderer.mainCamera().position();
+		boolean third = !mc.options.getCameraType().isFirstPerson();
+		Vec3 body = mc.player.position().add(0, 1.0, 0);
+		if (third && !mc.player.isSpectator()) {
+			if (cam.distanceTo(body) < 1.2) {
+				found.add("camera on the player");
+			} else {
+				String hid = blocked(mc, cam, body, 0.6);
+				if (hid != null) {
+					found.add("player hidden by " + hid);
+				}
+			}
+		}
+		if (subject != null) {
+			String hid = blocked(mc, cam, subject, 0.9);
+			if (hid != null) {
+				found.add("subject hidden by " + hid);
+			} else if (third && behind(cam, subject, body)) {
+				found.add("subject behind the player");
+			}
+		}
 		return found.isEmpty() ? "-" : String.join(",", found);
+	}
+
+	/** The block between {@code from} and {@code to}, or null when the line reaches within {@code slack} of it. */
+	private static String blocked(Minecraft mc, Vec3 from, Vec3 to, double slack) {
+		BlockHitResult hit = mc.level.clip(new ClipContext(from, to, ClipContext.Block.VISUAL, ClipContext.Fluid.NONE, mc.player));
+		if (hit.getType() != HitResult.Type.BLOCK || hit.getLocation().distanceTo(to) <= slack) {
+			return null;
+		}
+		return BuiltInRegistries.BLOCK.getKey(mc.level.getBlockState(hit.getBlockPos()).getBlock()).getPath();
+	}
+
+	/** Whether the player's body sits on the line from the camera to the subject, in front of the subject. */
+	private static boolean behind(Vec3 cam, Vec3 subject, Vec3 body) {
+		Vec3 line = subject.subtract(cam);
+		double along = body.subtract(cam).dot(line) / line.lengthSqr();
+		if (along <= 0 || along >= 1) {
+			return false;
+		}
+		return cam.add(line.scale(along)).distanceTo(body) < 0.45;
+	}
+
+	/**
+	 * What the scene is about, so every frame checks it can be seen (not behind a block or the player):
+	 * {@code film.subject(Vec3.atCenterOf(chest))}. Lasts until the scene ends.
+	 */
+	public void subject(Vec3 point) {
+		subject = point;
 	}
 
 	/** What happened at this frame, for the sound pass: {@code log("chest_open", "")}. */
@@ -647,6 +704,32 @@ public final class Film {
 
 	public void normalGui() {
 		ctx.runOnClient(Minecraft::resizeGui);
+	}
+
+	// ------------------------------------------------------------------ the front camera
+
+	/** While on, FilmCameraMixin draws the view from {@link #FRONT_EYE} towards {@link #FRONT_LOOK}. */
+	public static volatile boolean FRONT_ON;
+	public static volatile Vec3 FRONT_EYE, FRONT_LOOK;
+
+	/**
+	 * The view from {@code eye} towards {@code look}, with the player still in her own body (she walks,
+	 * her model and HUD show): a shot can face her. Call it each frame to move with her; the game eases
+	 * nothing, so move the eye a little at a time. Third person, or the game leaves her own model out.
+	 */
+	public void front(Vec3 eye, Vec3 look) {
+		if (!FRONT_ON) {
+			ctx.runOnClient(mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK));
+		}
+		target = look;
+		FRONT_EYE = eye;
+		FRONT_LOOK = look;
+		FRONT_ON = true;
+	}
+
+	/** Back to the game's own camera. */
+	public void frontOff() {
+		FRONT_ON = false;
 	}
 
 	// ------------------------------------------------------------------ the camera

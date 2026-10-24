@@ -65,6 +65,8 @@ public class ArrivalShort implements FabricClientGameTest {
 
 	private Film film;
 	private ClientGameTestContext ctx;
+	/** While true, {@link #arrive} films from behind the player instead of through her eyes. */
+	private boolean thirdPersonArrival;
 
 	static boolean enabled() {
 		return Film.on(PREFIX) && (Boolean.getBoolean(PREFIX + ".videoShort2") || Boolean.getBoolean(PREFIX + ".videoShort3")
@@ -103,6 +105,18 @@ public class ArrivalShort implements FabricClientGameTest {
 		ctx.runOnClient(mc -> mc.options.particles().set(ParticleStatus.MINIMAL));
 		if (listing()) {
 			listingScenes();
+			return;
+		}
+		if (Boolean.getBoolean(PREFIX + ".videoRoundup")) {
+			// The cozy-mods roundup's opening (mods-media ROUNDUP-SHORT-PLAN.md): Gabby opening the starter
+			// chest, tall, cut before the chest's screen so what's inside stays a surprise (her call).
+			film.scene("r_open", this::openChest);
+			// The roundup's opening as made (Gabby, 2026-10-23): the snowy arrival of the third Short, but
+			// with her in frame, seen from behind as she looks out of the arch (the breakout's own opening
+			// was first person; she wanted herself in it). Long enough for her first line (5.5 s).
+			thirdPersonArrival = true;
+			film.scene("r_snow", () -> arrive(SNOW, 110, 10, -4, 4, 9));
+			thirdPersonArrival = false;
 			return;
 		}
 		if (Boolean.getBoolean(PREFIX + ".videoShort3")) {
@@ -204,14 +218,19 @@ public class ArrivalShort implements FabricClientGameTest {
 			film.world = null;
 		}
 		film.hud(true);
-		// The player's own eyes (the chest and creeper scenes leave third person on).
-		ctx.runOnClient(mc -> mc.options.setCameraType(net.minecraft.client.CameraType.FIRST_PERSON));
+		// The player's own eyes (the chest and creeper scenes leave third person on), unless this arrival
+		// is seen from behind her (the roundup's opening).
+		ctx.runOnClient(mc -> mc.options.setCameraType(thirdPersonArrival ? net.minecraft.client.CameraType.THIRD_PERSON_BACK : net.minecraft.client.CameraType.FIRST_PERSON));
 		film.world = create(a.seed());
 		film.server = film.world.getServer();
 		film.immediate = true;
 		// Before the first frame, and quick: replies off, the filming pace (one saved frame a tick).
 		film.server.runCommand("gamerule send_command_feedback false");
 		film.server.runCommand("tick rate " + film.prop("videoTickRate", "10"));
+		if (thirdPersonArrival) {
+			// In her skin (thirdPerson checks the skin pack is on); the view itself comes from the front camera below.
+			film.thirdPerson(true, 2.8);
+		}
 		// The cherry and loop gazebos stand below a slope; they look out the open way (take 1's loop faced a bank).
 		// The third Short's dark forest looked out to sea and its peaks gazebo at a rock wall: they face
 		// the dark oaks and the most open snowy view instead (take 2, 2026-10-22).
@@ -227,9 +246,20 @@ public class ArrivalShort implements FabricClientGameTest {
 			float yaw = spawnYaw + (float) (yawFrom + (yawTo - yawFrom) * t);
 			float pitch = (float) (pitchFrom + (pitchTo - pitchFrom) * t);
 			look(yaw, pitch);
+			if (thirdPersonArrival) {
+				// Facing her (Gabby, 2026-10-23: in third person, not back to the camera): the camera stands
+				// in the arch she looks out of, a little to her left and above her eyes, and turns with her, so
+				// her face, the pillars and the dome are the shot and the snow is behind the camera's shoulder.
+				Vec3 at = ctx.computeOnClient(mc -> mc.player.position());
+				double r = Math.toRadians(yaw);
+				Vec3 ahead = new Vec3(-Math.sin(r), 0, Math.cos(r));
+				Vec3 side = new Vec3(-ahead.z, 0, ahead.x);
+				film.front(at.add(ahead.scale(3.6)).add(side.scale(0.9)).add(0, 1.9, 0), at.add(0, 1.45, 0));
+			}
 			film.quiet();
 			film.record(1);
 		}
+		film.frontOff();
 		String[] got = gazebo();
 		film.note("gazebo", a.seed() + ": " + String.join(" ", got));
 		if (!a.biomes().contains("?")) {
@@ -400,6 +430,70 @@ public class ArrivalShort implements FabricClientGameTest {
 		});
 		film.note("kit", kit);
 		Film.check(kit.equals("1 bed, 16 torches, 6 bread"), "the starter chest held a bed, 16 torches and 6 bread (it held " + kit + ")");
+	}
+
+	/**
+	 * The roundup's opening: third person, tall, she turns to the starter chest, steps up and opens
+	 * it; filming stops on the frame its screen appears, so the contents stay unknown (Gabby,
+	 * 2026-10-23). The camera is closer than the chest scene's 4.5 and she starts further back: in
+	 * the tall run of that scene the camera met the gazebo's far side and closed in on her head, and
+	 * she didn't show at all.
+	 */
+	private void openChest() {
+		film.hud(false);
+		film.survival();
+		film.server.runCommand("clear @a");
+		film.server.runCommand("time set 6000");
+		Film.Spot home = home();
+		BlockPos chest = film.server.computeOnServer(s -> {
+			ServerLevel level = s.overworld();
+			BlockPos middle = level.getRespawnData().pos();
+			for (BlockPos p : BlockPos.betweenClosed(middle.offset(-7, -1, -7), middle.offset(7, 4, 7))) {
+				if (level.getBlockState(p).getBlock() instanceof ChestBlock) {
+					return p.immutable();
+				}
+			}
+			return null;
+		});
+		Film.check(chest != null, "the gazebo has its starter chest");
+		double dx = home.x() - (chest.getX() + 0.5), dz = home.z() - (chest.getZ() + 0.5), len = Math.max(1, Math.hypot(dx, dz));
+		Vec3 stand = new Vec3(chest.getX() + 0.5 + dx / len * 3.5, chest.getY(), chest.getZ() + 0.5 + dz / len * 3.5);
+		Vec3 lid = Vec3.atCenterOf(chest);
+		Vec3 away = lid.add(dz / len * 2.2, 0.6, -dx / len * 2.2);
+		film.server.runCommand(String.format(Locale.ROOT, "tp @a %.3f %.3f %.3f facing %.3f %.3f %.3f", stand.x, stand.y, stand.z, away.x, away.y, away.z));
+		ctx.waitTicks(4);
+		film.thirdPerson(true, 2.6);
+		film.turnHead(away);
+		// Every frame checks the chest can be seen: four tall runs hid it behind her (2026-10-23).
+		film.subject(lid);
+		// She turns to it, then walks up to it.
+		for (int i = 0; i < 14; i++) {
+			film.turnHead(away.lerp(lid, Film.ease(i / 13.0)));
+			film.record(1);
+		}
+		ctx.getInput().holdKey(o -> o.keyUp);
+		try {
+			for (int i = 0; i < 30; i++) {
+				Vec3 at = film.server.computeOnServer(s -> s.getPlayerList().getPlayers().get(0).position());
+				if (Math.hypot(at.x - lid.x, at.z - lid.z) < 2.0) {
+					break;
+				}
+				film.turnHead(lid);
+				film.record(1);
+			}
+		} finally {
+			ctx.getInput().releaseKey(o -> o.keyUp);
+		}
+		film.aim(chest);
+		film.record(6);
+		boolean shown = ctx.computeOnClient(mc -> mc.options.getCameraType() == net.minecraft.client.CameraType.THIRD_PERSON_BACK);
+		film.note("third_person", Boolean.toString(shown));
+		ctx.getInput().pressKey(o -> o.keyUse);
+		film.log("chest_open", "");
+		// Not one frame of the chest's screen: it closes off camera.
+		ctx.waitFor(mc -> mc.gui.screen() instanceof ContainerScreen, 40);
+		ctx.getInput().pressKey(InputConstants.KEY_ESCAPE);
+		Film.check(shown, "the scene is filmed in third person");
 	}
 
 	/**

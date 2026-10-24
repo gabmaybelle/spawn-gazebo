@@ -13,5 +13,8 @@
 	},
 	"depends": {
 		"spawn_gazebo": "*"
-	}
+	},
+	"mixins": [
+		"spawn-gazebo-gametest-film.mixins.json"
+	]
 }
