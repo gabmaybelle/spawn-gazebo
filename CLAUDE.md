@@ -89,8 +89,7 @@ not a wait loop.
 **Commits.**
 - Author and committer are always `gabmaybelle <211247938+gabmaybelle@users.noreply.github.com>`:
   `git -c user.name=gabmaybelle -c user.email=211247938+gabmaybelle@users.noreply.github.com commit ...`.
-  Never a personal email, and never `Claude <noreply@anthropic.com>` as the author. Claude goes in
-  a `Co-Authored-By:` line at the end of the message.
+  Never a personal email, and no co-author line.
 - Ask Gabby before committing or pushing when she's around. Finish the build and the tests first.
 - Commit messages say what changed for players, in plain sentences.
 
@@ -111,7 +110,7 @@ or test names. Check the diff for these before every push.
 **Writing.**
 - README and CHANGELOG are for players: plain, friendly, no jargon. New player-facing changes
   go in the CHANGELOG's newest section.
-- Keep the credit line: "made by Gabby with help from Claude, an AI assistant".
+- The README's credit line is "Made by Gabby": leave it as it is.
 - Gabby publishes on Modrinth herself. Don't upload anything there.
 
 **Minecraft.** Fabric on Minecraft 26.3 (Mojang names; Loom 1.18.4, Java 25). Vanilla names
