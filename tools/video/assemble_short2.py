@@ -56,6 +56,22 @@ if len(sys.argv) > 4 and sys.argv[4] == 'short3':
         ('b_loop', 0, None, ['FOLLOW FOR MORE', '*COZY* MODS'], 1100),
     ]
     CARRIED = {'b_peaks', 'b_dark', 'b_bamboo', 'b_cherry', 'b_birch', 'b_desert'}
+# The third Short refilmed (mods-media spawn-gazebo/SHORT-3-PLAN.md "Refilm", Gabby, 2026-10-23): SG2's shape
+# with her facing the camera, opening and looping in the Dappled Forest, from ArrivalShort's -PvideoShort3Face
+# frames: `python assemble_short2.py <frames> <sounds> <out> short3face`. Captions sit low, under her.
+if len(sys.argv) > 4 and sys.argv[4] == 'short3face':
+    NAME = 'spawn-gazebo-short-3'
+    SCENES = [
+        ('v_dappled', 0, None, ['A GAZEBO IN THE', '*DAPPLED* FOREST'], 1430),
+        ('v_snow', 0, None, ['FITS *EVERY*', 'BIOME'], 1430),
+        ('v_cherry', 0, None, ['FITS *EVERY*', 'BIOME'], 1430),
+        ('v_ice', 0, None, ['FITS *EVERY*', 'BIOME'], 1430),
+        ('v_dark', 0, None, ['FITS *EVERY*', 'BIOME'], 1430),
+        ('v_bamboo', 0, None, ['FITS *EVERY*', 'BIOME'], 1430),
+        ('v_desert', 0, None, ['FITS *EVERY*', 'BIOME'], 1430),
+        ('v_loop', 0, None, ['FOLLOW FOR MORE', '*COZY* MODS'], 1430),
+    ]
+    CARRIED = {'v_cherry', 'v_ice', 'v_dark', 'v_bamboo', 'v_desert'}
 BADGE_BOX = (40, 250, 520, 350)
 
 FONTS = [os.environ.get('CAPTION_FONT', ''), 'C:/Windows/Fonts/ariblk.ttf', '/usr/share/fonts/truetype/msttcorefonts/Arial_Black.ttf',

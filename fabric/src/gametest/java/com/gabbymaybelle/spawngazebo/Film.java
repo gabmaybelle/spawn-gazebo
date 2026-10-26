@@ -1,5 +1,24 @@
 package com.gabbymaybelle.spawngazebo;
 
+import net.minecraft.core.Vec3i;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.level.block.BellBlock;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.BushBlock;
+import net.minecraft.world.level.block.CandleBlock;
+import net.minecraft.world.level.block.CarpetBlock;
+import net.minecraft.world.level.block.ChainBlock;
+import net.minecraft.world.level.block.DoorBlock;
+import net.minecraft.world.level.block.FenceGateBlock;
+import net.minecraft.world.level.block.FlowerPotBlock;
+import net.minecraft.world.level.block.LanternBlock;
+import net.minecraft.world.level.block.SignBlock;
+import net.minecraft.world.level.block.TorchBlock;
+import net.minecraft.world.level.block.TrapDoorBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import com.mojang.blaze3d.platform.InputConstants;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -730,6 +749,56 @@ public final class Film {
 	/** Back to the game's own camera. */
 	public void frontOff() {
 		FRONT_ON = false;
+	}
+
+	// ------------------------------------------------------------------ a build going up
+
+	/**
+	 * A structure template going up block by block on camera (a series episode's "I built this"):
+	 * the template {@code id} (a data file under {@code data/<ns>/structure/}, or one saved with a
+	 * structure block) placed with its corner at {@code origin}, {@code perFrame} blocks a frame, in
+	 * building order (lowest first, then nearest the middle), one frame recorded after each batch.
+	 * Blocks that need support (torches, lanterns, doors, plants) are kept for last so they don't drop.
+	 * Returns how many blocks were placed. Clear the ground first; the template's air blocks are
+	 * placed too, so the footprint is emptied as it rises.
+	 */
+	public int rise(Identifier id, BlockPos origin, int perFrame) {
+		List<StructureTemplate.StructureBlockInfo> blocks = server.computeOnServer(s -> {
+			StructureTemplate template = s.getStructureTemplateManager().get(id).orElse(null);
+			if (template == null) {
+				return List.of();
+			}
+			List<StructureTemplate.StructureBlockInfo> all = new ArrayList<>(template.filterBlocks(origin, new StructurePlaceSettings(), Blocks.AIR, false));
+			Vec3i size = template.getSize();
+			double cx = origin.getX() + size.getX() / 2.0, cz = origin.getZ() + size.getZ() / 2.0;
+			all.sort(Comparator.comparingInt((StructureTemplate.StructureBlockInfo b) -> supported(b.state()) ? 1 : 0)
+					.thenComparingInt(b -> b.pos().getY())
+					.thenComparingDouble(b -> Math.hypot(b.pos().getX() + 0.5 - cx, b.pos().getZ() + 0.5 - cz)));
+			return all;
+		});
+		check(!blocks.isEmpty(), "the template " + id + " exists and has blocks");
+		int placed = 0;
+		for (int i = 0; i < blocks.size(); i += perFrame) {
+			List<StructureTemplate.StructureBlockInfo> batch = blocks.subList(i, Math.min(blocks.size(), i + perFrame));
+			server.runOnServer(s -> {
+				for (StructureTemplate.StructureBlockInfo b : batch) {
+					// The block only: a chest or sign comes empty (fill it with a command after, if the shot needs it).
+					s.overworld().setBlock(b.pos(), b.state(), 2);
+				}
+			});
+			placed += batch.size();
+			record(1);
+		}
+		log("rise", id + " " + placed + " blocks at " + origin.toShortString());
+		return placed;
+	}
+
+	/** Blocks that need something under or beside them to stay: placed last by {@link #rise}. */
+	private static boolean supported(BlockState state) {
+		Block b = state.getBlock();
+		return b instanceof TorchBlock || b instanceof LanternBlock || b instanceof DoorBlock || b instanceof BushBlock
+				|| b instanceof FlowerPotBlock || b instanceof CarpetBlock || b instanceof CandleBlock || b instanceof BellBlock
+				|| b instanceof ChainBlock || b instanceof SignBlock || b instanceof TrapDoorBlock || b instanceof FenceGateBlock;
 	}
 
 	// ------------------------------------------------------------------ the camera

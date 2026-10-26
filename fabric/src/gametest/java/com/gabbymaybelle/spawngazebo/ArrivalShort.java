@@ -69,7 +69,7 @@ public class ArrivalShort implements FabricClientGameTest {
 	private boolean thirdPersonArrival;
 
 	static boolean enabled() {
-		return Film.on(PREFIX) && (Boolean.getBoolean(PREFIX + ".videoShort2") || Boolean.getBoolean(PREFIX + ".videoShort3")
+		return Film.on(PREFIX) && (Boolean.getBoolean(PREFIX + ".videoShort2") || Boolean.getBoolean(PREFIX + ".videoShort3") || Boolean.getBoolean(PREFIX + ".videoShort3Face")
 				|| Boolean.getBoolean(PREFIX + ".videoListing"));
 	}
 
@@ -117,6 +117,24 @@ public class ArrivalShort implements FabricClientGameTest {
 			thirdPersonArrival = true;
 			film.scene("r_snow", () -> arrive(SNOW, 110, 10, -4, 4, 9));
 			thirdPersonArrival = false;
+			return;
+		}
+		if (Boolean.getBoolean(PREFIX + ".videoShort3Face")) {
+			// The third Short refilmed (mods-media spawn-gazebo/SHORT-3-PLAN.md "Refilm", Gabby, 2026-10-23):
+			// SG2's shape with her facing the camera, opening and looping in 26.3's Dappled Forest. One world
+			// (the home seed), seven spots found with /locate biome from its spawn: she is put there, the mod's
+			// own command builds a gazebo round her (the wood from the nearest trees: poplar in the dappled
+			// forest), and the front camera films her stepping out of the arch towards it.
+			film.scene("v_dappled", () -> visit("dappled_forest", 452, 512, "poplar", 70, true));
+			film.scene("v_snow", () -> visit("snowy_plains", 80, 464, "spruce", 28));
+			film.scene("v_cherry", () -> visit("cherry_grove", 528, 596, "cherry", 28));
+			film.scene("v_ice", () -> visit("ice_spikes", 280, 608, "?", 28));
+			film.scene("v_dark", () -> visit("dark_forest", -1836, 2120, "dark_oak", 28));
+			film.scene("v_bamboo", () -> visit("bamboo_jungle", -1244, -836, "?", 28));
+			film.scene("v_desert", () -> visit("desert", -1112, -1424, "?", 28));
+			// The spots are the ones the scouts approved (the search starts there and takes them when they pass).
+			// The loop: a second dappled spot (at least 15 blocks from the first, or the command refuses).
+			film.scene("v_loop", () -> visit("dappled_forest", 544, 516, "poplar", 60));
 			return;
 		}
 		if (Boolean.getBoolean(PREFIX + ".videoShort3")) {
@@ -189,6 +207,183 @@ public class ArrivalShort implements FabricClientGameTest {
 		boolean standing = film.server.computeOnServer(s -> !s.overworld().getBlockState(s.overworld().getRespawnData().pos().below()).isAir());
 		film.note("morning", "gazebo floor under the spawn " + standing);
 		Film.check(standing, "the gazebo stands at the spawn");
+	}
+
+	// ------------------------------------------------------------------ the refilm's visits
+
+	/**
+	 * A gazebo built where she stands, in the home world, filmed facing her: she is put at {@code x, z}
+	 * (creative for the move, so the fall and the chunks cost nothing on camera), the mod's own
+	 * {@code /spawngazebo build} and its confirm run as her, she is set in the middle facing out of the
+	 * arch, and the front camera (the roundup's) films her looking out and then, for the second half,
+	 * walking out towards it, the camera backing away with her. Checks the biome and the wood the mod
+	 * chose, the same way {@link #arrive} does.
+	 */
+	private void visit(String biome, int x, int z, String wood, int frames) {
+		visit(biome, x, z, wood, frames, false);
+	}
+
+	/** As above; with {@code walk} she steps out of the arch towards the camera for the shot's last two thirds, else she stands and the camera pushes in a little. */
+	private void visit(String biome, int x, int z, String wood, int frames, boolean walk) {
+		film.frontOff();
+		film.hud(false);
+		film.server.runCommand("gamemode creative @a");
+		film.server.runCommand("tp @p " + x + " 120 " + z);
+		film.chunks();
+		// /locate names the biome's nearest edge, which can be a river through it (the dappled forest's
+		// first scout built the gazebo in one): the nearest dry spot in the biome, searched outwards.
+		BlockPos spot = land(biome, x, z);
+		Film.check(spot != null, biome + ": dry ground in the biome within 128 blocks of " + x + ", " + z);
+		if (spot == null) {
+			return;
+		}
+		x = spot.getX();
+		z = spot.getZ();
+		film.note("visit", biome + ": building at " + spot.toShortString());
+		film.server.runCommand("tp @p " + (x + 0.5) + " " + (spot.getY() + 1) + " " + (z + 0.5));
+		film.chunks();
+		film.server.runCommand("execute as @p at @s run spawngazebo build");
+		film.server.runCommand("execute as @p at @s run spawngazebo build confirm");
+		BlockPos middle = film.server.computeOnServer(s -> s.overworld().getRespawnData().pos());
+		Film.check(Math.abs(middle.getX() - x) < 4 && Math.abs(middle.getZ() - z) < 4, biome + ": the gazebo was built at " + x + ", " + z + " (the spawn is " + middle.toShortString() + ")");
+		float out = film.server.computeOnServer(s -> s.overworld().getRespawnData().yaw());
+		// Standing shots: she stands just inside the arch, so the camera outside it sees the pillars and the dome
+		// behind her (Gabby, 2026-10-23: show more of the gazebo); the walk starts in the middle and comes out.
+		double ro0 = Math.toRadians(out);
+		double sx = middle.getX() + 0.5 + (walk ? 0 : -Math.sin(ro0) * 5.5), sz = middle.getZ() + 0.5 + (walk ? 0 : Math.cos(ro0) * 5.5);
+		film.server.runCommand("tp @p " + sx + " " + middle.getY() + " " + sz + " " + out + " 0");
+		// A short lane out of the arch with no trunks or leaves in it, so the camera backing away with her
+		// never has a tree between them (the first take lost her behind a poplar).
+		double ro = Math.toRadians(out);
+		int ax = (int) Math.round(-Math.sin(ro)), az = (int) Math.round(Math.cos(ro));
+		for (int d = 2; d <= 14; d++) {
+			int lx = middle.getX() + ax * d, lz = middle.getZ() + az * d;
+			for (String what : new String[] { "#minecraft:logs", "#minecraft:leaves", "minecraft:short_grass", "minecraft:tall_grass", "minecraft:fern",
+					"minecraft:large_fern", "minecraft:bush", "minecraft:firefly_bush", "minecraft:dead_bush", "#minecraft:flowers" }) {
+				film.server.runCommand("fill " + (lx - 5) + " " + (middle.getY() - 1) + " " + (lz - 5) + " " + (lx + 5) + " " + (middle.getY() + 7) + " " + (lz + 5) + " air replace " + what);
+			}
+		}
+		// The walk-out lane is levelled to the gazebo floor (Gabby, 2026-10-23: she walked into a raised patch of
+		// ground outside the clearing): a 7-wide strip out to 14 blocks is cut down to floor level and holes filled.
+		if (walk) {
+			for (int d = 2; d <= 14; d++) {
+				int lx = middle.getX() + ax * d, lz = middle.getZ() + az * d;
+				film.server.runCommand("fill " + (lx - 3) + " " + middle.getY() + " " + (lz - 3) + " " + (lx + 3) + " " + (middle.getY() + 7) + " " + (lz + 3) + " air");
+				film.server.runCommand("fill " + (lx - 3) + " " + (middle.getY() - 1) + " " + (lz - 3) + " " + (lx + 3) + " " + (middle.getY() - 1) + " " + (lz + 3) + " grass_block replace air");
+			}
+		}
+		film.server.runCommand("gamemode survival @a");
+		film.calm();
+		film.hud(true);
+		film.thirdPerson(true, 2.8);
+		film.chunks();
+		look(out + 10, 4);
+		// The front camera before the first frame is saved (a frame drawn before it is on shows her back).
+		Vec3 start = ctx.computeOnClient(mc -> mc.player.position());
+		double r0 = Math.toRadians(out + 10);
+		Vec3 ahead0 = new Vec3(-Math.sin(r0), 0, Math.cos(r0));
+		film.front(clearEye(start, ahead0, new Vec3(-ahead0.z, 0, ahead0.x), walk ? 11.5 : 4.5, walk ? 0.28 : 0.1), start.add(0, 1.5, 0));
+		ctx.waitTicks(3);
+		film.rolling();
+		for (int i = 0; i < frames; i++) {
+			double t = 1 - Math.pow(1 - i / (frames - 1.0), 2);
+			look(out + 10 - 14 * (float) t, 4 + 5 * (float) t);
+			if (walk && i == frames / 3) {
+				ctx.getInput().holdKey(o -> o.keyUp);
+			}
+			Vec3 at = ctx.computeOnClient(mc -> mc.player.position());
+			double r = Math.toRadians(out + 10 - 14 * t);
+			Vec3 ahead = new Vec3(-Math.sin(r), 0, Math.cos(r));
+			Vec3 side = new Vec3(-ahead.z, 0, ahead.x);
+			// Standing: the camera pushes in from 3.6 to 3.0 blocks over the shot, so the frame moves (Gabby, 2026-10-23:
+			// not every shot needs her stepping out).
+			// Wider (Gabby, 2026-10-23: show more of the gazebo): the camera starts about 6.5 blocks out of the arch and a
+			// little above her eyes, looking slightly down at her chest, so the pillars, the roof and the dome frame her;
+			// standing shots push in a little, the walk brings her out towards it.
+			film.front(clearEye(at, ahead, side, walk ? 11.5 - 5.5 * t : 4.5 - 0.5 * t, walk ? 0.28 : 0.1), at.add(0, 1.5, 0));
+			film.quiet();
+			film.record(1);
+		}
+		ctx.getInput().releaseKey(o -> o.keyUp);
+		// Left on: a scout's last still is taken after the scene returns, and the next visit switches it off.
+		String[] got = gazebo();
+		film.note("visit", biome + " at " + x + ", " + z + ": " + String.join(" ", got));
+		Film.check(got[0].equals(biome), x + ", " + z + " is in " + biome + " (it is " + got[0] + ")");
+		if (!wood.equals("?")) {
+			Film.check(got[1].equals(wood), biome + "'s gazebo has " + wood + " pillars (they are " + got[1] + ")");
+		}
+	}
+
+	/**
+	 * The nearest surface spot in {@code biome} that is dry (no water or ice under it) and whose 15 by 15
+	 * footprint is all in the biome and fairly level, searched outwards from {@code x, z} in 8-block steps
+	 * up to 96 blocks; null when there is none.
+	 */
+	private BlockPos land(String biome, int x, int z) {
+		return film.server.computeOnServer(s -> {
+			ServerLevel level = s.overworld();
+			for (int r = 0; r <= 128; r += 4) {
+				for (int dx = -r; dx <= r; dx += 4) {
+					for (int dz = -r; dz <= r; dz += 4) {
+						if (Math.max(Math.abs(dx), Math.abs(dz)) != r) {
+							continue;
+						}
+						int cx = x + dx, cz = z + dz;
+						level.getChunk(cx >> 4, cz >> 4);
+						int y = groundY(level, cx, cz);
+						BlockPos top = new BlockPos(cx, y - 1, cz);
+						if (!level.getFluidState(top).isEmpty() || !level.getBiome(top).unwrapKey().map(k -> k.identifier().getPath()).orElse("").equals(biome)) {
+							continue;
+						}
+						boolean ok = true;
+						for (int ox = -10; ox <= 10 && ok; ox += 5) {
+							for (int oz = -10; oz <= 10 && ok; oz += 5) {
+								level.getChunk((cx + ox) >> 4, (cz + oz) >> 4);
+								int yy = groundY(level, cx + ox, cz + oz);
+								BlockPos corner = new BlockPos(cx + ox, yy - 1, cz + oz);
+								ok = Math.abs(yy - y) <= 2 && level.getFluidState(corner).isEmpty()
+										&& level.getBiome(corner).unwrapKey().map(k -> k.identifier().getPath()).orElse("").equals(biome);
+							}
+						}
+						if (ok) {
+							return top;
+						}
+					}
+				}
+			}
+			return null;
+		});
+	}
+
+	/** The ground under the trees: the surface without leaves, then down through trunks, bamboo and plants to what she can stand on. */
+	private static int groundY(ServerLevel level, int x, int z) {
+		int y = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+		while (y > level.getMinY() + 1) {
+			BlockState s = level.getBlockState(new BlockPos(x, y - 1, z));
+			if (s.is(net.minecraft.tags.BlockTags.LOGS) || s.is(net.minecraft.tags.BlockTags.LEAVES) || s.is(net.minecraft.world.level.block.Blocks.BAMBOO)
+					|| s.is(net.minecraft.world.level.block.Blocks.BAMBOO_SAPLING) || s.is(net.minecraft.tags.BlockTags.FLOWERS) || s.is(net.minecraft.tags.BlockTags.SAPLINGS)
+					|| s.getBlock() instanceof net.minecraft.world.level.block.BushBlock || s.is(net.minecraft.world.level.block.Blocks.MUSHROOM_STEM)
+					|| s.is(net.minecraft.tags.BlockTags.WART_BLOCKS)) {
+				y--;
+			} else {
+				break;
+			}
+		}
+		return y;
+	}
+
+	/** The front camera's eye, 3.6 ahead of her and a little to her left, pulled in while a block (a tree) sits there. */
+	private Vec3 clearEye(Vec3 at, Vec3 ahead, Vec3 side, double from, double rise) {
+		for (double d = from; d >= 1.6; d -= 0.4) {
+			Vec3 eye = at.add(ahead.scale(d)).add(side.scale(Math.min(1.5, 0.9 * d / 3.6))).add(0, 1.6 + rise * d, 0);
+			boolean clear = film.server.computeOnServer(s -> s.overworld().getBlockState(BlockPos.containing(eye)).isAir()
+					&& s.overworld().getBlockState(BlockPos.containing(eye).below()).isAir() || s.overworld().getBlockState(BlockPos.containing(eye)).isAir()
+					&& !s.overworld().getBlockState(BlockPos.containing(eye).below()).isSolid());
+			if (clear) {
+				return eye;
+			}
+		}
+		return at.add(ahead.scale(1.6)).add(0, 2.3, 0);
 	}
 
 	// ------------------------------------------------------------------ the worlds
