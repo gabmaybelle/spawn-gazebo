@@ -4,6 +4,7 @@
 // ones the mods ship, copied into the jar at build time.
 plugins {
 	id 'xyz.jpenilla.run-paper' version "${run_paper_version}"
+	id 'io.papermc.hangar-publish-plugin' version "${hangar_publish_version}"
 }
 
 repositories {
@@ -38,3 +39,28 @@ tasks.named('runServer') {
 
 tasks.named('jar') { archiveBaseName = "${rootProject.name}-paper" }
 tasks.named('sourcesJar') { archiveBaseName = "${rootProject.name}-paper" }
+
+// Hangar (hangar.papermc.io/gabmaybelle/Spawn-Gazebo). `.github/workflows/hangar.yml` runs
+// `:paper:publishPluginPublicationToHangar` when a GitHub release is published, with the jar
+// attached to that release (-PhangarJar=<path>) so Hangar gets the same file as GitHub. The key is
+// the HANGAR_API_TOKEN environment variable (a repository secret), never a file in the repo.
+hangarPublish {
+	publications.register('plugin') {
+		id = 'Spawn-Gazebo'
+		version = providers.environmentVariable('HANGAR_VERSION').orElse(project.version.toString())
+		channel = 'Release'
+		// The release notes, written to a file by the workflow (an environment variable can't hold them safely).
+		changelog = providers.environmentVariable('HANGAR_CHANGELOG_FILE').flatMap { providers.fileContents(layout.projectDirectory.file(it)).asText }
+		apiKey = providers.environmentVariable('HANGAR_API_TOKEN')
+		platforms {
+			paper {
+				if (project.hasProperty('hangarJar')) {
+					jar.fileValue(project.file(project.hangarJar))
+				} else {
+					jar = tasks.named('jar').flatMap { it.archiveFile }
+				}
+				platformVersions = [project.minecraft_version]
+			}
+		}
+	}
+}

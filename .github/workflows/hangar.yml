@@ -1,0 +1,74 @@
+# Sends the Paper plugin to Hangar (hangar.papermc.io/gabmaybelle/Spawn-Gazebo): the
+# spawn-gazebo-paper-<version>.jar attached to a GitHub release, on Hangar's Release channel, with the
+# release notes as the changelog. It runs when a release is published, or by hand from the Actions tab
+# with a tag (for a release that was published before this workflow existed). A release without a
+# Paper jar (the 1.21.1 line) is skipped. Needs the HANGAR_API_TOKEN repository secret: a Hangar API
+# key with the create_version permission. Nothing else in this repository publishes anywhere.
+
+name: hangar
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to send to Hangar, for example v1.4.0'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    if: github.repository == 'gabmaybelle/spawn-gazebo'
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - name: checkout the released commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag }}
+      - name: download the release's Paper jar and notes
+        id: jar
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p hangar
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern 'spawn-gazebo-paper-*.jar' --dir hangar || true
+          count=$(ls hangar/*.jar 2>/dev/null | wc -l)
+          if [ "$count" = "0" ]; then
+            echo "No Paper jar on $TAG; nothing to send to Hangar."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          elif [ "$count" != "1" ]; then
+            echo "Expected one Paper jar on $TAG, found $count:"; ls hangar
+            exit 1
+          else
+            gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json body -q .body > hangar/changelog.md
+            echo "path=$PWD/$(ls hangar/*.jar)" >> "$GITHUB_OUTPUT"
+            echo "changelog=$PWD/hangar/changelog.md" >> "$GITHUB_OUTPUT"
+            echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+          fi
+      - name: validate gradle wrapper
+        if: steps.jar.outputs.skip != 'true'
+        uses: gradle/actions/wrapper-validation@v6
+      - name: setup jdk
+        if: steps.jar.outputs.skip != 'true'
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'microsoft'
+      - name: setup gradle (with caching)
+        if: steps.jar.outputs.skip != 'true'
+        uses: gradle/actions/setup-gradle@v6
+      - name: make gradle wrapper executable
+        if: steps.jar.outputs.skip != 'true'
+        run: chmod +x ./gradlew
+      - name: publish to Hangar
+        if: steps.jar.outputs.skip != 'true'
+        env:
+          HANGAR_API_TOKEN: ${{ secrets.HANGAR_API_TOKEN }}
+          HANGAR_VERSION: ${{ steps.jar.outputs.version }}
+          HANGAR_CHANGELOG_FILE: ${{ steps.jar.outputs.changelog }}
+        run: ./gradlew :paper:publishPluginPublicationToHangar -PhangarJar="${{ steps.jar.outputs.path }}" --stacktrace
