@@ -4,13 +4,16 @@ import java.util.Locale;
 import java.util.logging.Level;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.server.ServerLoadEvent;
+import io.papermc.paper.event.player.AsyncPlayerSpawnLocationEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
@@ -37,6 +40,8 @@ public final class SpawnGazeboPlugin extends JavaPlugin implements Listener {
 
 	private boolean protectGazebo = true;
 	private int protectedRadius = 12;
+	/** {@link #middle()} as last worked out on the main thread, for the join event, which runs off it. */
+	private volatile Location spawnMiddle;
 
 	@Override
 	public void onEnable() {
@@ -63,9 +68,11 @@ public final class SpawnGazeboPlugin extends JavaPlugin implements Listener {
 		PersistentDataContainer data = world.getPersistentDataContainer();
 		if (data.has(checkedKey, PersistentDataType.BYTE)) {
 			getLogger().info("Spawn Gazebo: " + world.getName() + " was looked at before, leaving it as it is");
+			keepLoaded();
 			return;
 		}
 		data.set(checkedKey, PersistentDataType.BYTE, (byte) 1);
+		keepLoaded();
 		// Only a brand-new world: one that has never ticked. Older worlds keep their spawn as it is.
 		if (!getConfig().getBoolean("spawnGazebo", true)) {
 			getLogger().info("Spawn Gazebo: spawnGazebo is off, leaving the spawn as it is");
@@ -95,6 +102,8 @@ public final class SpawnGazeboPlugin extends JavaPlugin implements Listener {
 		} else {
 			data.remove(claimedKey);
 		}
+		overworld().removePluginChunkTickets(this);
+		keepLoaded();
 		getLogger().info("Spawn Gazebo: built the gazebo (" + built.palette() + " " + built.wood() + ") at "
 				+ built.middle().getBlockX() + " " + built.middle().getBlockY() + " " + built.middle().getBlockZ()
 				+ (built.chest() == null ? "" : ", chest at " + built.chest().getBlockX() + " " + built.chest().getBlockY() + " " + built.chest().getBlockZ()));
@@ -103,6 +112,51 @@ public final class SpawnGazeboPlugin extends JavaPlugin implements Listener {
 	/** The box the world remembers, or null when it has no gazebo. */
 	int[] savedBox() {
 		return overworld().getPersistentDataContainer().get(boxKey, PersistentDataType.INTEGER_ARRAY);
+	}
+
+	/** Where players wake up: the middle of the gazebo's floor, facing out of the entrance, or null without a gazebo. */
+	Location middle() {
+		int[] box = savedBox();
+		if (box == null) {
+			return null;
+		}
+		World world = overworld();
+		return new Location(world, box[0] + GazeboBuilder.HALF + 0.5, box[1] + GazeboBuilder.DEPTH + 3, box[2] + GazeboBuilder.HALF + 0.5,
+				world.getSpawnLocation().getYaw(), 0f);
+	}
+
+	/**
+	 * Keeps the gazebo's chunk loaded. A server need not keep its spawn chunks loaded, and the
+	 * game's own search for a place to put a new player reads the ground height of an unloaded
+	 * chunk as the bottom of the world: this is what put the first test player under the bedrock.
+	 */
+	private void keepLoaded() {
+		Location middle = middle();
+		spawnMiddle = middle;
+		if (middle != null) {
+			overworld().addPluginChunkTicket(middle.getBlockX() >> 4, middle.getBlockZ() >> 4, this);
+		}
+	}
+
+	/**
+	 * A player's first join puts them on the gazebo's floor, whatever the game's own spawn search
+	 * would do. The event runs off the main thread, so it only reads the location worked out earlier.
+	 */
+	@EventHandler
+	public void onSpawnLocation(AsyncPlayerSpawnLocationEvent event) {
+		Location middle = spawnMiddle;
+		if (middle != null && event.isNewPlayer()) {
+			event.setSpawnLocation(middle.clone());
+		}
+	}
+
+	/** So does a respawn without a bed or a respawn anchor. */
+	@EventHandler
+	public void onRespawn(PlayerRespawnEvent event) {
+		Location middle = middle();
+		if (middle != null && !event.isBedSpawn() && !event.isAnchorSpawn()) {
+			event.setRespawnLocation(middle);
+		}
 	}
 
 	boolean protectGazebo() {

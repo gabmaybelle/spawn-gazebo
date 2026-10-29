@@ -54,6 +54,10 @@ it first, and add this session's row before ending.
   versions that don't. `-PtestLootr` checks the result.
 - The gazebo is built by the server when the world is created, so its log lines are in the
   server's log, not the client's.
+- **Paper doesn't keep the spawn chunks loaded for us.** The game's own search for where to put a
+  new player reads an unloaded chunk's ground as the bottom of the world, which put the first test
+  player under the bedrock. The plugin keeps the gazebo's chunk loaded with a chunk ticket and sets a
+  first join's and a bedless respawn's location itself (`SpawnGazeboPlugin.onSpawnLocation`, `onRespawn`).
 
 ## This mod's job
 
