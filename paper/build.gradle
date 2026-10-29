@@ -1,0 +1,40 @@
+// The Paper plugin: spawn-gazebo-paper-<version>.jar, for servers that run Paper. It is written
+// against the Paper API only (no Minecraft classes, no mixins, nothing from `common`), so one jar
+// runs on every Paper build of its Minecraft version. The gazebo's structure files are the same
+// ones the mods ship, copied into the jar at build time.
+plugins {
+	id 'xyz.jpenilla.run-paper' version "${run_paper_version}"
+}
+
+repositories {
+	maven {
+		name = 'papermc'
+		url = 'https://repo.papermc.io/repository/maven-public/'
+	}
+}
+
+dependencies {
+	// Versions are in gradle.properties. The server provides the API at run time, so it isn't bundled.
+	compileOnly "io.papermc.paper:paper-api:${project.paper_api_version}"
+}
+
+processResources {
+	def version = project.version
+	inputs.property "version", version
+	filesMatching("plugin.yml") {
+		expand "version": version
+	}
+	// The 22 gazebo templates (tools/generate-spawn.js), one per palette and wood, as gazebo/<name>.nbt.
+	from(project(':common').file('src/main/resources/resourcepacks/spawn_gazebo_data/data/spawn_gazebo/structure/spawn')) {
+		into 'gazebo'
+	}
+}
+
+// `./gradlew :paper:runServer` downloads a Paper server into paper/run and starts it with the plugin
+// (a console, no window). tools/paper-server-test.js is the test that checks the gazebo is there.
+tasks.named('runServer') {
+	minecraftVersion '26.3'
+}
+
+tasks.named('jar') { archiveBaseName = "${rootProject.name}-paper" }
+tasks.named('sourcesJar') { archiveBaseName = "${rootProject.name}-paper" }

@@ -23,8 +23,13 @@ it first, and add this session's row before ending.
   `AddPackFindersEvent`), `SpawnGazeboNeoForgeClient` (the Mods screen's Config button), its own
   `FireBlockMixin` and `spawn_gazebo.fire.mixins.json`, `neoforge.mods.toml`, and `src/clienttest/` (the
   NeoForge in-game test; part of the mod only in dev runs, never in the jar).
+- `paper/`: the Paper server plugin (`SpawnGazeboPlugin`: settings, the new-world check, the kit on a
+  player's first join; `GazeboBuilder`: the same build as `SpawnGazebo.java`, written against the
+  Paper API). It never uses `common`: a plugin sees only the Paper API, not Minecraft's classes. Its
+  build copies the structure files out of `common` into the jar as `gazebo/<name>.nbt`. The world
+  remembers the gazebo in its own persistent data (`spawngazebo:checked`, `box`, `table`, `claimed`).
 - `tools/`: `generate-spawn.js` writes the gazebo templates, `generate-data.js` the data pack,
-  `render-gazebo.js` the icon and the README picture.
+  `render-gazebo.js` the icon and the README picture, `paper-server-test.js` the Paper plugin's test.
 
 ## Build and test
 
@@ -32,6 +37,7 @@ it first, and add this session's row before ending.
 - `./gradlew :neoforge:runClientTest` (NeoForge): the settings file, a new world's gazebo (kit claimed, spawn radius 0), that the world remembers it and where, that the player's game is told the box, and protection incl. the right-click refusal. A failed check crashes the game with a report in `neoforge/build/run/clientTest/crash-reports/`; a watchdog stops a hang after 10 minutes.
 - `./gradlew :fabric:runClientGameTest` (Fabric): the settings file (typos, unknown settings, safe saving), the settings screen (title screen, in a world, greyed out on a
   server), saving, a new world's gazebo, and protection inside and just outside the radius.
+- `node tools/paper-server-test.js <folder> --plugin paper/build/libs/spawn-gazebo-paper-<v>.jar --eula` (Paper): downloads a Paper server into the folder once, starts it on a brand-new world with no window, and checks the plugin built the gazebo at the spawn (floor, spore blossom, lightning rod, the chest and its kit), that TNT, fire and a piston leave it alone (a `clone` of the gazebo compared with `execute if blocks`, random ticks off so the glow berries don't grow and snow doesn't settle meanwhile) while TNT still works outside the radius, and `/spawngazebo build` (a second gazebo, the refusal on top of one, confirm with nothing to confirm), with no warnings. `--keep-world` checks an existing world is left alone; `--no-protection` is the proof run (the protection checks must fail). `--eula` is your acceptance of Minecraft's server EULA. The console is saved as `test-console.log` in the folder.
 - `-PtestLootr` works on both tasks (`:fabric:runClientGameTest`, `:neoforge:runClientTest`): Lootr is installed (NeoForge: Modrinth id `PdFGq3vT`, Fabric `gVwn7m2v`) and the test checks the starter chest became a Lootr chest and the kit isn't handed out on joining. CI runs both with and without it.
 
 ## Gotchas
@@ -48,6 +54,10 @@ it first, and add this session's row before ending.
   versions that don't. `-PtestLootr` checks the result.
 - The gazebo is built by the server when the world is created, so its log lines are in the
   server's log, not the client's.
+- **Paper doesn't keep the spawn chunks loaded for us.** The game's own search for where to put a
+  new player reads an unloaded chunk's ground as the bottom of the world, which put the first test
+  player under the bedrock. The plugin keeps the gazebo's chunk loaded with a chunk ticket and sets a
+  first join's and a bedless respawn's location itself (`SpawnGazeboPlugin.onSpawnLocation`, `onRespawn`).
 
 ## This mod's job
 

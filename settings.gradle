@@ -17,5 +17,6 @@ rootProject.name = 'spawn-gazebo'
 
 // `common` holds everything that doesn't care which loader it runs on. `fabric` and `neoforge`
 // compile those sources straight into their own jars (see their build.gradle), so there is one
-// codebase and two mod files.
-include 'common', 'fabric', 'neoforge'
+// codebase and two mod files. `paper` is the server plugin for Paper servers: it uses only the
+// Paper API, never `common`, and shares the gazebo's structure files through its build.gradle.
+include 'common', 'fabric', 'neoforge', 'paper'

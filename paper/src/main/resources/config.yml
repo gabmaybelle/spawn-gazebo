@@ -1,0 +1,20 @@
+# Spawn Gazebo (Paper). spawnGazebo, starterChest and chestLoot only matter the first time the
+# server starts a new world; the protection settings apply when the server starts.
+
+# A little round stone gazebo at the world spawn of a new world.
+spawnGazebo: true
+
+# A chest in the gazebo's railing with a starter kit, like the bonus chest.
+starterChest: true
+
+# What's in it: starter_kit (a bed, torches, bread, saplings and a bundle), bonus_chest (vanilla's
+# bonus chest loot), or any loot table id such as minecraft:chests/village/village_plains_house.
+chestLoot: starter_kit
+
+# The gazebo can only be changed in creative, and explosions, fire, pistons and buckets leave it
+# alone. The chest, the benches and the pots still work. Turn off to remodel it.
+protectGazebo: true
+
+# How far from the gazebo's middle that reaches, in blocks: 7 is the gazebo itself, more keeps the
+# ground round it as it was too (up to 64).
+protectedRadius: 12
