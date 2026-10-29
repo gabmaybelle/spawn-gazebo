@@ -5,3 +5,7 @@ description: New worlds start in a round stone gazebo at the world spawn, with a
 author: Gabby
 website: https://github.com/gabmaybelle/spawn-gazebo
 api-version: '26.3'
+permissions:
+  spawngazebo.build:
+    description: Build the gazebo where you stand with /spawngazebo build
+    default: op

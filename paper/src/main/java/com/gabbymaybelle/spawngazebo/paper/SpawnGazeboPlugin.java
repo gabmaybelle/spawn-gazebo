@@ -1,6 +1,8 @@
 package com.gabbymaybelle.spawngazebo.paper;
 
 import java.util.Locale;
+import java.util.logging.Level;
+import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
@@ -17,9 +19,13 @@ import org.bukkit.plugin.java.JavaPlugin;
 /**
  * Spawn Gazebo as a Paper plugin: the server builds the gazebo at the world spawn the first time it
  * starts a brand-new world, and the world remembers it. Settings are in {@code plugins/SpawnGazebo/config.yml}.
- * The gazebo itself is {@link GazeboBuilder}.
+ * The gazebo itself is {@link GazeboBuilder}, the protection {@link GazeboGuard} and the build
+ * command for existing worlds {@link GazeboCommand}.
  */
 public final class SpawnGazeboPlugin extends JavaPlugin implements Listener {
+	/** The gazebo itself reaches this far from its middle; the protected area can't be smaller. */
+	static final int MIN_RADIUS = GazeboBuilder.HALF, MAX_RADIUS = 64;
+
 	/** The world remembers whether it was looked at, so a world from before the plugin keeps its spawn as it is. */
 	private NamespacedKey checkedKey;
 	/** The gazebo's box, {@code [minX, minY, minZ, maxX, maxY, maxZ]}, for the protection. */
@@ -29,14 +35,22 @@ public final class SpawnGazeboPlugin extends JavaPlugin implements Listener {
 	/** The loot table the chest was filled from, or "" when the chest is off: the kit later players are handed. */
 	private NamespacedKey tableKey;
 
+	private boolean protectGazebo = true;
+	private int protectedRadius = 12;
+
 	@Override
 	public void onEnable() {
 		saveDefaultConfig();
+		protectGazebo = getConfig().getBoolean("protectGazebo", true);
+		protectedRadius = Math.max(MIN_RADIUS, Math.min(MAX_RADIUS, getConfig().getInt("protectedRadius", 12)));
 		checkedKey = new NamespacedKey(this, "checked");
 		boxKey = new NamespacedKey(this, "box");
 		claimedKey = new NamespacedKey(this, "claimed");
 		tableKey = new NamespacedKey(this, "table");
 		Bukkit.getPluginManager().registerEvents(this, this);
+		Bukkit.getPluginManager().registerEvents(new GazeboGuard(this), this);
+		getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
+				event.registrar().register("spawngazebo", "Builds the gazebo where you stand (operators): /spawngazebo build, then confirm", new GazeboCommand(this)));
 	}
 
 	/** The server has started: a brand-new world gets its gazebo, once. */
@@ -45,7 +59,7 @@ public final class SpawnGazeboPlugin extends JavaPlugin implements Listener {
 		if (event.getType() != ServerLoadEvent.LoadType.STARTUP) {
 			return;
 		}
-		World world = Bukkit.getWorlds().get(0);
+		World world = overworld();
 		PersistentDataContainer data = world.getPersistentDataContainer();
 		if (data.has(checkedKey, PersistentDataType.BYTE)) {
 			getLogger().info("Spawn Gazebo: " + world.getName() + " was looked at before, leaving it as it is");
@@ -63,18 +77,40 @@ public final class SpawnGazeboPlugin extends JavaPlugin implements Listener {
 		}
 		try {
 			GazeboBuilder.Result built = GazeboBuilder.build(this, world, world.getSpawnLocation().getBlockX(), world.getSpawnLocation().getBlockZ(), kit());
-			if (built == null) {
-				return;
+			if (built != null) {
+				remember(built, false);
 			}
-			data.set(boxKey, PersistentDataType.INTEGER_ARRAY, built.box());
-			data.set(tableKey, PersistentDataType.STRING, built.table() == null ? "" : built.table());
-			getLogger().info("Spawn Gazebo: built the gazebo (" + built.palette() + " " + built.wood() + ") at "
-					+ built.middle().getBlockX() + " " + built.middle().getBlockY() + " " + built.middle().getBlockZ()
-					+ (built.chest() == null ? "" : ", chest at " + built.chest().getBlockX() + " " + built.chest().getBlockY() + " " + built.chest().getBlockZ()));
 		} catch (RuntimeException e) {
-			getLogger().severe("Spawn Gazebo: couldn't build the gazebo: " + e);
-			e.printStackTrace();
+			getLogger().log(Level.SEVERE, "Spawn Gazebo: couldn't build the gazebo", e);
 		}
+	}
+
+	/** The world remembers the gazebo just built: its box, what its chest holds, and whether the chest is already someone's. */
+	void remember(GazeboBuilder.Result built, boolean claimed) {
+		PersistentDataContainer data = overworld().getPersistentDataContainer();
+		data.set(boxKey, PersistentDataType.INTEGER_ARRAY, built.box());
+		data.set(tableKey, PersistentDataType.STRING, built.table() == null ? "" : built.table());
+		if (claimed) {
+			data.set(claimedKey, PersistentDataType.BYTE, (byte) 1);
+		} else {
+			data.remove(claimedKey);
+		}
+		getLogger().info("Spawn Gazebo: built the gazebo (" + built.palette() + " " + built.wood() + ") at "
+				+ built.middle().getBlockX() + " " + built.middle().getBlockY() + " " + built.middle().getBlockZ()
+				+ (built.chest() == null ? "" : ", chest at " + built.chest().getBlockX() + " " + built.chest().getBlockY() + " " + built.chest().getBlockZ()));
+	}
+
+	/** The box the world remembers, or null when it has no gazebo. */
+	int[] savedBox() {
+		return overworld().getPersistentDataContainer().get(boxKey, PersistentDataType.INTEGER_ARRAY);
+	}
+
+	boolean protectGazebo() {
+		return protectGazebo;
+	}
+
+	int protectedRadius() {
+		return protectedRadius;
 	}
 
 	/**
@@ -87,7 +123,7 @@ public final class SpawnGazeboPlugin extends JavaPlugin implements Listener {
 		if (player.hasPlayedBefore()) {
 			return;
 		}
-		World world = Bukkit.getWorlds().get(0);
+		World world = overworld();
 		PersistentDataContainer data = world.getPersistentDataContainer();
 		String table = data.getOrDefault(tableKey, PersistentDataType.STRING, "");
 		if (table.isEmpty()) {
@@ -103,7 +139,7 @@ public final class SpawnGazeboPlugin extends JavaPlugin implements Listener {
 	}
 
 	/** What the chest holds, from the settings: the starter kit, the bonus chest, any loot table id, or nothing. */
-	private String kit() {
+	String kit() {
 		if (!getConfig().getBoolean("starterChest", true)) {
 			return null;
 		}
@@ -119,5 +155,10 @@ public final class SpawnGazeboPlugin extends JavaPlugin implements Listener {
 			return GazeboBuilder.STARTER_KIT;
 		}
 		return value;
+	}
+
+	/** The server's main world: the first one loaded is always the default world of server.properties, whatever else a world plugin adds. */
+	static World overworld() {
+		return Bukkit.getWorlds().get(0);
 	}
 }

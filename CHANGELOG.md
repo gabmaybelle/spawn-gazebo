@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.0
+
+- **Spawn Gazebo for Paper servers.** A new `paper` file is a plugin for Paper 26.3: drop it in the server's `plugins` folder and the next brand-new world starts in the gazebo, with nothing for players to install. It builds the same gazebo as the mod (the local wood, sandstone in deserts, the starter chest and kit, lava nearby set to stone), protects it the same way (no breaking, building, buckets, pistons, fire or explosions outside creative), hands later players their roll of the kit, and has `/spawngazebo build` for worlds that already exist. Settings are in `plugins/SpawnGazebo/config.yml`. Lootr and the in-game settings screen are mod-only.
+
 ## 1.3.3
 
 - **The right wood even with no trees in sight.** When nothing grows near the spawn, the gazebo now takes the wood its biome is known for: spruce on snowy plains, ice spikes, frozen peaks and snowy beaches, cherry in a cherry grove, pale oak in a pale garden, mangrove in a mangrove swamp, bamboo in a bamboo jungle, birch in a birch forest and dark oak in a dark forest. Before, all of these got oak.
