@@ -56,6 +56,12 @@ jobs:
           SDL_VIDEO_FORCE_EGL: '1'
         timeout-minutes: 12
         run: xvfb-run -a ./gradlew :neoforge:runClientTest ${{ matrix.test_args }}
+      - name: run Paper server test
+        # The Paper plugin (paper/) on a real Paper server with a brand-new world: no window, so no
+        # virtual display needed. Checks the gazebo stands at the spawn with its chest and kit.
+        if: always() && matrix.variant == 'on its own'
+        timeout-minutes: 10
+        run: node tools/paper-server-test.js paper/run --plugin "$(ls paper/build/libs/spawn-gazebo-paper-*.jar | grep -v sources)" --eula
       - name: capture game test screenshots
         if: always()
         uses: actions/upload-artifact@v7
@@ -74,3 +80,4 @@ jobs:
           path: |
             fabric/build/libs/
             neoforge/build/libs/
+            paper/build/libs/

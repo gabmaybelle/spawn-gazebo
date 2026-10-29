@@ -1,0 +1,7 @@
+name: SpawnGazebo
+version: ${version}
+main: com.gabbymaybelle.spawngazebo.paper.SpawnGazeboPlugin
+description: New worlds start in a round stone gazebo at the world spawn, with a starter chest.
+author: Gabby
+website: https://github.com/gabmaybelle/spawn-gazebo
+api-version: '26.3'
