@@ -26,10 +26,10 @@ jobs:
     env:
       TAG: ${{ github.event.release.tag_name || inputs.tag }}
     steps:
-      - name: checkout the released commit
+      # The build files come from this workflow's own commit, not the tag's: the jar itself is
+      # downloaded from the release, so an older release can be sent with today's workflow.
+      - name: checkout
         uses: actions/checkout@v6
-        with:
-          ref: ${{ github.event.release.tag_name || inputs.tag }}
       - name: download the release's Paper jar and notes
         id: jar
         env:
